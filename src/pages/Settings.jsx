@@ -1,5 +1,7 @@
 import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
+import PlanUpgrade from '../components/PlanUpgrade';
 
 const Settings = () => {
   const { language, changeLanguage } = useLanguage();
@@ -29,30 +31,36 @@ const Settings = () => {
   };
 
   return (
-    <div className="container mx-auto mt-10 p-6 bg-[#a7e3f4] rounded-lg shadow-lg">
-      <h1 className="text-4xl font-bold mb-6 text-center text-[#545454]">{translations[language].title}</h1>
+    <View className="flex-1 p-6 bg-[#a7e3f4]">
+      <Text className="text-4xl font-bold mb-6 text-center text-[#545454]">{translations[language].title}</Text>
       
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].language}</h2>
-        <select 
-          value={language} 
-          onChange={(e) => changeLanguage(e.target.value)}
-          className="w-full p-2 rounded border border-[#3a7ca5]"
+      <View className="mb-6">
+        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].language}</Text>
+        <TouchableOpacity 
+          className="bg-[#11ccf5] p-2 rounded mb-2"
+          onPress={() => changeLanguage('es')}
         >
-          <option value="es">Español</option>
-          <option value="en">English</option>
-          <option value="fr">Français</option>
-        </select>
-      </div>
+          <Text className="text-white text-center">Español</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          className="bg-[#11ccf5] p-2 rounded mb-2"
+          onPress={() => changeLanguage('en')}
+        >
+          <Text className="text-white text-center">English</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          className="bg-[#11ccf5] p-2 rounded"
+          onPress={() => changeLanguage('fr')}
+        >
+          <Text className="text-white text-center">Français</Text>
+        </TouchableOpacity>
+      </View>
 
-      <div>
-        <h2 className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].membership}</h2>
-        <p className="mb-2">{translations[language].currentPlan}: Free</p>
-        <button className="bg-[#11ccf5] text-white px-4 py-2 rounded hover:bg-[#3a7ca5] transition-colors duration-300">
-          {translations[language].upgradePlan}
-        </button>
-      </div>
-    </div>
+      <View>
+        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].membership}</Text>
+        <PlanUpgrade />
+      </View>
+    </View>
   );
 };
 
