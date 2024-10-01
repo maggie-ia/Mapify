@@ -2,10 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "../components/ui/button";
+import { useAuth } from '../hooks/useAuth';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 const OperationSelection = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user } = useAuth();
 
   const translations = {
     es: {
@@ -43,8 +47,31 @@ const OperationSelection = () => {
     },
   };
 
+  const processTextMutation = useMutation({
+    mutationFn: (data) => axios.post('/api/process', data),
+    onSuccess: (response) => {
+      navigate('/results', { state: { result: response.data.result } });
+    },
+    onError: (error) => {
+      console.error('Error processing text:', error);
+      // Handle error (e.g., show error message to user)
+    },
+  });
+
   const handleOperationSelect = (operation) => {
-    navigate('/results', { state: { selectedOperation: operation } });
+    const text = localStorage.getItem('uploadedText'); // Assume text is stored after file upload
+    processTextMutation.mutate({ operation, text });
+  };
+
+  const isOperationAllowed = (operation) => {
+    if (user.membership === 'premium') return true;
+    if (user.membership === 'basic') {
+      return ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'].includes(operation);
+    }
+    if (user.membership === 'free') {
+      return ['summarize', 'paraphrase', 'translate'].includes(operation);
+    }
+    return false;
   };
 
   return (
@@ -55,7 +82,10 @@ const OperationSelection = () => {
           <Button
             key={key}
             onClick={() => handleOperationSelect(key)}
-            className="bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300"
+            disabled={!isOperationAllowed(key)}
+            className={`bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300 ${
+              !isOperationAllowed(key) && 'opacity-50 cursor-not-allowed'
+            }`}
           >
             {value}
           </Button>

@@ -1,68 +1,70 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { processText } from '../services/textProcessingService';
-import ResultDisplay from '../components/ResultDisplay';
-import ExportOptions from '../components/ExportOptions';
+import { Button } from "../components/ui/button";
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 const Results = () => {
   const location = useLocation();
-  const { file, operation } = location.state || {};
   const { language } = useLanguage();
-  const [result, setResult] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const result = location.state?.result;
 
   const translations = {
     es: {
       title: 'Resultados',
-      loading: 'Procesando...',
-      error: 'Ocurrió un error al procesar el texto.',
+      exportButton: 'Exportar',
+      noResult: 'No hay resultados disponibles.',
     },
     en: {
       title: 'Results',
-      loading: 'Processing...',
-      error: 'An error occurred while processing the text.',
+      exportButton: 'Export',
+      noResult: 'No results available.',
     },
     fr: {
       title: 'Résultats',
-      loading: 'Traitement en cours...',
-      error: 'Une erreur s\'est produite lors du traitement du texte.',
+      exportButton: 'Exporter',
+      noResult: 'Aucun résultat disponible.',
     },
   };
 
-  useEffect(() => {
-    const processFile = async () => {
-      if (file && operation) {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const processedText = await processText(operation, file.content);
-          setResult(processedText);
-        } catch (err) {
-          setError(translations[language].error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
+  const exportMutation = useMutation({
+    mutationFn: (data) => axios.post('/api/export', data),
+    onSuccess: (response) => {
+      // Handle successful export (e.g., download file or show success message)
+      console.log('Export successful:', response.data);
+    },
+    onError: (error) => {
+      console.error('Error exporting result:', error);
+      // Handle error (e.g., show error message to user)
+    },
+  });
 
-    processFile();
-  }, [file, operation, language]);
-
-  if (isLoading) {
-    return <div className="text-center mt-10">{translations[language].loading}</div>;
-  }
-
-  if (error) {
-    return <div className="text-center mt-10 text-red-500">{error}</div>;
-  }
+  const handleExport = (format) => {
+    exportMutation.mutate({ document_id: result.id, format });
+  };
 
   return (
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
-      {result && <ResultDisplay result={result} operationType={operation} />}
-      {result && <ExportOptions result={result} operationType={operation} />}
+      {result ? (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <p className="text-quaternary whitespace-pre-wrap">{result}</p>
+          <div className="mt-6 flex justify-center space-x-4">
+            <Button onClick={() => handleExport('pdf')} className="bg-tertiary text-white hover:bg-quaternary">
+              {translations[language].exportButton} (PDF)
+            </Button>
+            <Button onClick={() => handleExport('docx')} className="bg-tertiary text-white hover:bg-quaternary">
+              {translations[language].exportButton} (DOCX)
+            </Button>
+            <Button onClick={() => handleExport('txt')} className="bg-tertiary text-white hover:bg-quaternary">
+              {translations[language].exportButton} (TXT)
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-center text-quaternary">{translations[language].noResult}</p>
+      )}
     </div>
   );
 };
