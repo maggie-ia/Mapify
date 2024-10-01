@@ -20,6 +20,10 @@ def process_text():
     operation = data.get('operation')
     text = data.get('text')
     user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user or not text or not operation:
+        return jsonify({"error": "Invalid request"}), 400
 
     if not can_perform_operation(user_id):
         return jsonify({"error": "Operation limit reached for your membership level"}), 403
@@ -32,9 +36,11 @@ def process_text():
     elif operation == 'synthesize':
         result = synthesize_text(text)
     elif operation == 'concept_map':
-        user = User.query.get(user_id)
-        max_nodes = None if user.membership_type == 'premium' else 6
-        result = generate_concept_map(text, max_nodes)
+        if user.membership_type in ['basic', 'premium']:
+            max_nodes = None if user.membership_type == 'premium' else 6
+            result = generate_concept_map(text, max_nodes)
+        else:
+            return jsonify({"error": "Upgrade membership to access this feature"}), 403
     elif operation == 'relevant_phrases':
         result = extract_relevant_phrases(text)
     elif operation == 'translate':
@@ -45,6 +51,11 @@ def process_text():
     else:
         return jsonify({"error": "Invalid operation"}), 400
 
+    # Save the operation result
+    new_document = Document(content=text, user_id=user_id, operation_type=operation, result=result)
+    db.session.add(new_document)
+    db.session.commit()
+
     increment_operation(user_id)
 
     return jsonify({"result": result}), 200
@@ -52,16 +63,28 @@ def process_text():
 @api.route('/export', methods=['POST'])
 @jwt_required()
 def export_result():
+    data = request.json
+    document_id = data.get('document_id')
+    export_format = data.get('format')
     user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user or not document_id or not export_format:
+        return jsonify({"error": "Invalid request"}), 400
 
     if not can_export(user_id):
         return jsonify({"error": "Export limit reached for your membership level"}), 403
 
-    # Implementar lógica de exportación aquí
+    document = Document.query.get(document_id)
+    if not document or document.user_id != user_id:
+        return jsonify({"error": "Document not found"}), 404
+
+    # Implement export logic here (e.g., generate PDF, DOCX, or TXT file)
+    # For now, we'll just return a success message
 
     increment_export(user_id)
 
-    return jsonify({"message": "Export successful"}), 200
+    return jsonify({"message": f"Export successful in {export_format} format"}), 200
 
 @api.route('/membership-info', methods=['GET'])
 @jwt_required()

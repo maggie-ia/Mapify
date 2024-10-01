@@ -12,15 +12,17 @@ def can_export(user_id):
 def increment_operation(user_id):
     user = User.query.get(user_id)
     user.increment_operation()
+    db.session.commit()
 
 def increment_export(user_id):
     user = User.query.get(user_id)
     user.increment_export()
+    db.session.commit()
 
 def get_membership_info(user_id):
     user = User.query.get(user_id)
     return {
         'membership_type': user.membership_type,
-        'weekly_operations': user.weekly_operations,
-        'weekly_exports': user.weekly_exports
+        'operations_remaining': user.operations_remaining,
+        'exports_remaining': user.exports_remaining
     }
