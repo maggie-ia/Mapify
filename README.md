@@ -1,70 +1,112 @@
-# Welcome to your GPT Engineer project
+# Mapify Backend
 
-## Project info
+Este es el backend de la aplicación Mapify, desarrollado con Flask.
 
-**URL**: https://run.gptengineer.app/projects/241c4156-c547-4efa-895a-ba11b7480be8/improve
+## Estructura del Proyecto
 
-## How can I edit this code?
+```
+Mapify/
+├── backend/
+│   ├── app/
+│   │   ├── models/
+│   │   │   ├── document.py
+│   │   │   ├── init__.py
+│   │   │   └── user.py
+│   │   ├── routes/
+│   │   │   ├── api.py
+│   │   │   ├── auth.py
+│   │   │   ├── document.py
+│   │   │   └── init__.py
+│   │   ├── services/
+│   │   │   ├── concept_map_service.py
+│   │   │   ├── paraphrase_service.py
+│   │   │   ├── synthesis_service.py
+│   │   │   ├── text_processing.py
+│   │   └── tests/
+│   │       ├── test_connections.py
+│   ├── utils/
+│   │   ├── conceptMapGenerator.js
+│   ├── config.py
+│   ├── create_tables.py
+│   ├── run.py
+│   ├── routes.py
+│   └── serviceAccountKey.json
+│
+├── frontend/
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       │   ├── ConceptMap.jsx
+│       │   ├── ExportOptions.jsx
+│       │   ├── FileUpload.jsx
+│       │   ├── Header.jsx
+│       │   ├── Login.jsx
+│       │   ├── MembershipOptions.jsx
+│       │   ├── MembershipSelection.jsx
+│       │   ├── Navigation.jsx
+│       │   ├── OperationSelection.jsx
+│       │   ├── Register.jsx
+│       │   ├── RelevantPhrases.jsx
+│       │   ├── ResultDisplay.jsx
+│       │   ├── Results.jsx
+│       │   ├── Summary.jsx
+│       │   ├── TranslatedText.jsx
+│       ├── contexts/
+│       │   ├── AuthContext.jsx
+│       │   └── LanguageContext.jsx
+│       ├── hooks/
+│       │   └── useAuth.jsx
+│       ├── pages/
+│       │   ├── FileUpload.jsx
+│       │   ├── Home.jsx
+│       │   ├── MembershipSelection.jsx
+│       │   ├── OperationSelection.jsx
+│       │   ├── Results.jsx
+│       │   ├── Settings.jsx
+│       ├── services/
+│       │   ├── exportService.js
+│       │   ├── fileService.js
+│       │   └── textProcessingService.js
+│       ├── utils/
+│       │   └── index.css
+│       ├── App.jsx
+│       ├── index.css
+│       ├── index.js
+│       └── main.jsx
+│
+├── migrations/
+│   └── versions/
+├── node_modules/
+├── uploads/
+├── .env
+├── .gitignore
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── README.md
+├── requirements.txt
+└── tailwind.config.js
 
-There are several ways of editing your application.
-
-**Use GPT Engineer**
-
-Simply visit the GPT Engineer project at [GPT Engineer](https://gptengineer.app/projects/241c4156-c547-4efa-895a-ba11b7480be8/improve) and start prompting.
-
-Changes made via gptengineer.app will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in the GPT Engineer UI.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Configuración
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Crea un entorno virtual:
+   ```
+   python -m venv venv
+   ```
 
-**Use GitHub Codespaces**
+2. Activa el entorno virtual:
+   - En Windows: `venv\Scripts\activate`
+   - En macOS y Linux: `source venv/bin/activate`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. Instala las dependencias:
+   ```
+   pip install -r requirements.txt
+   ```
 
-## What technologies are used for this project?
+4. Configura las variables de entorno en un archivo `.env` en la raíz del proyecto.
 
-This project is built with .
-
-- Vite
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-All GPT Engineer projects can be deployed directly via the GPT Engineer app.
-
-Simply visit your project at [GPT Engineer](https://gptengineer.app/projects/241c4156-c547-4efa-895a-ba11b7480be8/improve) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.gptengineer.app/tips-tricks/custom-domain/)
+5. Ejecuta la aplicación:
+   ```
+   python run.py

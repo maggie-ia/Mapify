@@ -1,26 +1,64 @@
+import PyPDF2
+from io import BytesIO
+from transformers import pipeline
+import docx
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
-from transformers import pipeline
 from deep_translator import GoogleTranslator
-from io import BytesIO
 
-nlp = spacy.load("es_core_news_sm")
 summarizer = pipeline("summarization")
+paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
+nlp = spacy.load("es_core_news_sm")
+
+def extract_text_from_pdf(file_content):
+    """
+    Extrae el texto de un archivo PDF.
+    """
+    pdf_file = BytesIO(file_content)
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    text = ""
+    for page in pdf_reader.pages:
+        text += page.extract_text()
+    return text
+
+def extract_text_from_docx(file_content):
+    """
+    Extrae el texto de un archivo DOCX.
+    """
+    doc = docx.Document(BytesIO(file_content))
+    text = ""
+    for para in doc.paragraphs:
+        text += para.text + "\n"
+    return text
+
+def process_file(file):
+    """
+    Procesa el archivo subido y extrae su contenido.
+    """
+    if file.filename.endswith('.pdf'):
+        return extract_text_from_pdf(file.read())
+    elif file.filename.endswith('.txt'):
+        return file.read().decode('utf-8')
+    elif file.filename.endswith('.docx'):
+        return extract_text_from_docx(file.read())
+    else:
+        return "Formato de archivo no soportado."
 
 def summarize_text(text, max_length=150, min_length=50):
     """
-    Resume el texto dado utilizando el modelo de transformers.
+    Resume el texto dado utilizando la biblioteca de transformers.
     """
     summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
     return summary[0]['summary_text']
 
-def paraphrase_text(text):
+def paraphrase_text(text, max_length=100):
     """
-    Parafrasea el texto dado utilizando el modelo de transformers.
+    Parafrasea el texto dado utilizando la biblioteca de transformers.
     """
-    paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
-    paraphrased = paraphraser(text, max_length=100, num_return_sequences=1)
+    paraphrased = paraphraser(text, max_length=max_length, num_return_sequences=1)
     return paraphrased[0]['generated_text']
 
 def synthesize_text(text, max_length=200, min_length=100):
@@ -28,12 +66,28 @@ def synthesize_text(text, max_length=200, min_length=100):
     Sintetiza el texto dado combinando resumen y paráfrasis.
     """
     summary = summarize_text(text, max_length=max_length, min_length=min_length)
-    synthesis = paraphrase_text(summary)
+    synthesis = paraphrase_text(summary, max_length=max_length)
     return synthesis
+
+def extract_relevant_phrases(text, num_phrases=5):
+    """
+    Extrae las frases más relevantes del texto utilizando TF-IDF.
+    """
+    sentences = text.split('.')
+    vectorizer = TfidfVectorizer(stop_words='spanish')
+    tfidf_matrix = vectorizer.fit_transform(sentences)
+    sentence_scores = tfidf_matrix.sum(axis=1).A1
+    top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
+    relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
+    return relevant_phrases
 
 def generate_concept_map(text, max_nodes=6):
     """
     Genera un mapa conceptual a partir del texto proporcionado.
+    
+    :param text: Texto para generar el mapa conceptual.
+    :param max_nodes: Número máximo de nodos en el mapa (por defecto 6 para membresía básica).
+    :return: Imagen del mapa conceptual en formato bytes.
     """
     doc = nlp(text)
     
@@ -50,6 +104,8 @@ def generate_concept_map(text, max_nodes=6):
     plt.figure(figsize=(12, 8))
     pos = nx.spring_layout(G)
     nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=3000, font_size=10, font_weight='bold')
+    edge_labels = nx.get_edge_attributes(G, 'relation')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
     
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png')
@@ -57,17 +113,13 @@ def generate_concept_map(text, max_nodes=6):
     
     return img_buffer.getvalue()
 
-def extract_relevant_phrases(text, num_phrases=5):
-    """
-    Extrae las frases más relevantes del texto.
-    """
-    doc = nlp(text)
-    phrases = [sent.text for sent in doc.sents]
-    return phrases[:num_phrases]
-
 def translate_text(text, target_language):
     """
-    Traduce el texto al idioma especificado.
+    Traduce el texto dado al idioma especificado.
+    
+    :param text: Texto a traducir.
+    :param target_language: Idioma de destino (código de dos letras, ej. 'en', 'fr', 'es').
+    :return: Texto traducido.
     """
     translator = GoogleTranslator(source='auto', target=target_language)
     translated_text = translator.translate(text)
