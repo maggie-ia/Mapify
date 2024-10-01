@@ -68,7 +68,6 @@ const FileUpload = ({ onFileUploaded }) => {
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
-                // You might want to show a success message here
             } catch (error) {
                 setError(translations[language].uploadError);
                 setIsUploading(false);
