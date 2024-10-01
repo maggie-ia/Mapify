@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import FileUpload from '../components/FileUpload';
+import OperationSelection from '../components/OperationSelection';
 
 const Home = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const { language } = useLanguage();
+  const navigate = useNavigate();
 
   const translations = {
     es: {
@@ -23,14 +26,23 @@ const Home = () => {
 
   const handleFileUploaded = (fileData) => {
     setUploadedFile(fileData);
-    // Here you would typically navigate to the next step or show options for processing
+  };
+
+  const handleOperationSelect = (operation) => {
+    if (uploadedFile) {
+      navigate('/results', { state: { file: uploadedFile, operation } });
+    }
   };
 
   return (
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-4 text-center text-primary">{translations[language].title}</h1>
       <p className="text-xl mb-6 text-center text-quaternary">{translations[language].subtitle}</p>
-      <FileUpload onFileUploaded={handleFileUploaded} />
+      {!uploadedFile ? (
+        <FileUpload onFileUploaded={handleFileUploaded} />
+      ) : (
+        <OperationSelection onSelect={handleOperationSelect} />
+      )}
     </div>
   );
 };
