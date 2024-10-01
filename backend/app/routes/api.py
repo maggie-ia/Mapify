@@ -8,7 +8,8 @@ from app.services.text_processing import (
 )
 from app.services.membership_service import (
     can_perform_operation, can_export, increment_operation, increment_export, 
-    get_membership_info, update_membership, can_translate_to_language, get_page_limit
+    get_membership_info, update_membership, can_translate_to_language, get_page_limit,
+    start_trial, get_usage_history, check_trial_expiration, get_notifications
 )
 from app import db
 
@@ -26,6 +27,8 @@ def process_text():
     if not user or not text or not operation:
         return jsonify({"error": "Invalid request"}), 400
 
+    check_trial_expiration(user_id)
+
     if not can_perform_operation(user_id):
         return jsonify({"error": "Operation limit reached for your membership level"}), 403
 
@@ -42,8 +45,8 @@ def process_text():
     elif operation == 'synthesize':
         result = synthesize_text(text)
     elif operation == 'concept_map':
-        if user.membership_type in ['basic', 'premium']:
-            max_nodes = None if user.membership_type == 'premium' else 6
+        if user.membership_type in ['basic', 'premium'] or user.is_trial:
+            max_nodes = None if user.membership_type == 'premium' or user.is_trial else 6
             result = generate_concept_map(text, max_nodes)
         else:
             return jsonify({"error": "Upgrade membership to access this feature"}), 403
@@ -64,7 +67,7 @@ def process_text():
     db.session.add(new_document)
     db.session.commit()
 
-    increment_operation(user_id)
+    increment_operation(user_id, operation)
 
     return jsonify({"result": result}), 200
 
@@ -79,6 +82,8 @@ def export_result():
 
     if not user or not document_id or not export_format:
         return jsonify({"error": "Invalid request"}), 400
+
+    check_trial_expiration(user_id)
 
     if not can_export(user_id):
         return jsonify({"error": "Export limit reached for your membership level"}), 403
@@ -98,6 +103,7 @@ def export_result():
 @jwt_required()
 def membership_info():
     user_id = get_jwt_identity()
+    check_trial_expiration(user_id)
     info = get_membership_info(user_id)
     return jsonify(info), 200
 
@@ -113,3 +119,33 @@ def update_user_membership():
 
     updated_info = update_membership(user_id, new_membership_type)
     return jsonify(updated_info), 200
+
+@api.route('/start-trial', methods=['POST'])
+@jwt_required()
+def start_user_trial():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if user.is_trial or user.membership_type != 'free':
+        return jsonify({"error": "User is not eligible for a trial"}), 400
+
+    start_trial(user_id)
+    return jsonify({"message": "Trial started successfully"}), 200
+
+@api.route('/usage-history', methods=['GET'])
+@jwt_required()
+def get_user_usage_history():
+    user_id = get_jwt_identity()
+    history = get_usage_history(user_id)
+    return jsonify([{
+        'operation_type': h.operation_type,
+        'timestamp': h.timestamp.isoformat(),
+        'details': h.details
+    } for h in history]), 200
+
+@api.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_user_notifications():
+    user_id = get_jwt_identity()
+    notifications = get_notifications(user_id)
+    return jsonify(notifications), 200

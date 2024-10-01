@@ -12,6 +12,8 @@ class User(db.Model):
     weekly_exports = db.Column(db.Integer, default=0)
     last_reset = db.Column(db.DateTime, default=datetime.utcnow)
     monthly_reset = db.Column(db.DateTime, default=datetime.utcnow)
+    trial_end_date = db.Column(db.DateTime)
+    is_trial = db.Column(db.Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -19,9 +21,18 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def start_trial(self, days=14):
+        self.is_trial = True
+        self.trial_end_date = datetime.utcnow() + timedelta(days=days)
+        self.membership_type = 'premium'
+
+    def end_trial(self):
+        self.is_trial = False
+        self.membership_type = 'free'
+
     def can_perform_operation(self):
         self._reset_counters_if_needed()
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return True
         elif self.membership_type == 'basic':
             return self.weekly_operations < 10
@@ -30,7 +41,7 @@ class User(db.Model):
 
     def can_export(self):
         self._reset_counters_if_needed()
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return True
         elif self.membership_type == 'basic':
             return self.weekly_exports < 10
@@ -55,10 +66,12 @@ class User(db.Model):
             self.last_reset = now
         if now - self.monthly_reset > timedelta(days=30):
             self.monthly_reset = now
+        if self.is_trial and now > self.trial_end_date:
+            self.end_trial()
         db.session.commit()
 
     def get_page_limit(self):
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return float('inf')  # Sin límite
         elif self.membership_type == 'basic':
             return 10
@@ -66,7 +79,7 @@ class User(db.Model):
             return 5
 
     def can_translate_to_language(self, language):
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return True
         elif self.membership_type == 'basic':
             allowed_languages = ['en', 'es', 'fr', 'de']  # Ejemplo de 4 idiomas
@@ -83,15 +96,17 @@ class User(db.Model):
         self._reset_counters_if_needed()
         return {
             'membership_type': self.membership_type,
+            'is_trial': self.is_trial,
+            'trial_end_date': self.trial_end_date.isoformat() if self.trial_end_date else None,
             'weekly_operations_remaining': self.get_weekly_operations_remaining(),
             'weekly_exports_remaining': self.get_weekly_exports_remaining(),
             'page_limit': self.get_page_limit(),
-            'can_create_concept_maps': self.membership_type != 'free',
-            'concept_map_node_limit': float('inf') if self.membership_type == 'premium' else 6 if self.membership_type == 'basic' else 0
+            'can_create_concept_maps': self.membership_type != 'free' or self.is_trial,
+            'concept_map_node_limit': float('inf') if self.membership_type == 'premium' or self.is_trial else 6 if self.membership_type == 'basic' else 0
         }
 
     def get_weekly_operations_remaining(self):
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return float('inf')
         elif self.membership_type == 'basic':
             return max(0, 10 - self.weekly_operations)
@@ -99,7 +114,7 @@ class User(db.Model):
             return max(0, 3 - self.weekly_operations)
 
     def get_weekly_exports_remaining(self):
-        if self.membership_type == 'premium':
+        if self.is_trial or self.membership_type == 'premium':
             return float('inf')
         elif self.membership_type == 'basic':
             return max(0, 10 - self.weekly_exports)
