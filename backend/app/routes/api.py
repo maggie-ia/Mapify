@@ -7,7 +7,8 @@ from app.services.text_processing import (
     generate_concept_map, extract_relevant_phrases, translate_text
 )
 from app.services.membership_service import (
-    can_perform_operation, can_export, increment_operation, increment_export, get_membership_info
+    can_perform_operation, can_export, increment_operation, increment_export, 
+    get_membership_info, update_membership, can_translate_to_language, get_page_limit
 )
 from app import db
 
@@ -28,6 +29,11 @@ def process_text():
     if not can_perform_operation(user_id):
         return jsonify({"error": "Operation limit reached for your membership level"}), 403
 
+    # Check page limit
+    page_limit = get_page_limit(user_id)
+    if len(text.split()) > page_limit * 250:  # Assuming average of 250 words per page
+        return jsonify({"error": f"Document exceeds the {page_limit} page limit for your membership level"}), 403
+
     result = None
     if operation == 'summarize':
         result = summarize_text(text)
@@ -47,6 +53,8 @@ def process_text():
         target_language = data.get('target_language')
         if not target_language:
             return jsonify({"error": "Target language is required for translation"}), 400
+        if not can_translate_to_language(user_id, target_language):
+            return jsonify({"error": "Translation to this language is not available in your membership level"}), 403
         result = translate_text(text, target_language)
     else:
         return jsonify({"error": "Invalid operation"}), 400
@@ -92,3 +100,16 @@ def membership_info():
     user_id = get_jwt_identity()
     info = get_membership_info(user_id)
     return jsonify(info), 200
+
+@api.route('/update-membership', methods=['POST'])
+@jwt_required()
+def update_user_membership():
+    user_id = get_jwt_identity()
+    data = request.json
+    new_membership_type = data.get('membership_type')
+    
+    if new_membership_type not in ['free', 'basic', 'premium']:
+        return jsonify({"error": "Invalid membership type"}), 400
+
+    updated_info = update_membership(user_id, new_membership_type)
+    return jsonify(updated_info), 200
