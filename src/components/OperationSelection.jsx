@@ -1,78 +1,89 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
 
-const OperationSelection = ({ onSelect }) => {
-    const { language } = useLanguage();
-    const { user } = useAuth();
+const OperationSelection = () => {
+  const navigate = useNavigate();
+  const { language } = useLanguage();
+  const { user } = useAuth();
 
-    const operations = {
-        summarize: {
-            es: 'Resumir',
-            en: 'Summarize',
-            fr: 'Résumer'
-        },
-        paraphrase: {
-            es: 'Parafrasear',
-            en: 'Paraphrase',
-            fr: 'Paraphraser'
-        },
-        synthesize: {
-            es: 'Sintetizar',
-            en: 'Synthesize',
-            fr: 'Synthétiser'
-        },
-        conceptMap: {
-            es: 'Mapa Conceptual',
-            en: 'Concept Map',
-            fr: 'Carte Conceptuelle'
-        },
-        relevantPhrases: {
-            es: 'Frases Relevantes',
-            en: 'Relevant Phrases',
-            fr: 'Phrases Pertinentes'
-        },
-        translate: {
-            es: 'Traducir',
-            en: 'Translate',
-            fr: 'Traduire'
-        }
-    };
+  const translations = {
+    es: {
+      title: 'Selecciona una operación',
+      options: {
+        summarize: 'Resumir',
+        paraphrase: 'Parafrasear',
+        synthesize: 'Sintetizar',
+        conceptMap: 'Mapa Conceptual',
+        relevantPhrases: 'Frases Relevantes',
+        translate: 'Traducir',
+      },
+      upgradeMessage: 'Actualiza tu membresía para acceder a esta función'
+    },
+    en: {
+      title: 'Select an operation',
+      options: {
+        summarize: 'Summarize',
+        paraphrase: 'Paraphrase',
+        synthesize: 'Synthesize',
+        conceptMap: 'Concept Map',
+        relevantPhrases: 'Relevant Phrases',
+        translate: 'Translate',
+      },
+      upgradeMessage: 'Upgrade your membership to access this feature'
+    },
+    fr: {
+      title: 'Sélectionnez une opération',
+      options: {
+        summarize: 'Résumer',
+        paraphrase: 'Paraphraser',
+        synthesize: 'Synthétiser',
+        conceptMap: 'Carte Conceptuelle',
+        relevantPhrases: 'Phrases Pertinentes',
+        translate: 'Traduire',
+      },
+      upgradeMessage: 'Mettez à niveau votre adhésion pour accéder à cette fonctionnalité'
+    },
+  };
 
-    const isOperationAllowed = (operation) => {
-        if (user.membership === 'premium') return true;
-        if (user.membership === 'basic') {
-            if (operation === 'conceptMap') return true;
-            return ['summarize', 'paraphrase', 'translate', 'relevantPhrases'].includes(operation);
-        }
-        if (user.membership === 'free') {
-            return ['summarize', 'paraphrase', 'translate'].includes(operation);
-        }
-        return false;
-    };
+  const isOperationAllowed = (operation) => {
+    if (user.membership === 'premium') return true;
+    if (user.membership === 'basic') {
+      return ['summarize', 'paraphrase', 'translate', 'conceptMap', 'relevantPhrases'].includes(operation);
+    }
+    if (user.membership === 'free') {
+      return ['summarize', 'paraphrase', 'translate'].includes(operation);
+    }
+    return false;
+  };
 
-    return (
-        <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-primary">
-                {language === 'es' ? 'Selecciona una operación' :
-                 language === 'en' ? 'Select an operation' :
-                 'Sélectionnez une opération'}
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-                {Object.entries(operations).map(([key, value]) => (
-                    <Button
-                        key={key}
-                        onClick={() => onSelect(key)}
-                        disabled={!isOperationAllowed(key)}
-                        className={`bg-tertiary hover:bg-quaternary text-white ${!isOperationAllowed(key) && 'opacity-50 cursor-not-allowed'}`}
-                    >
-                        {value[language]}
-                    </Button>
-                ))}
-            </div>
-        </div>
-    );
+  const handleOperationSelect = (operation) => {
+    if (isOperationAllowed(operation)) {
+      navigate('/results', { state: { selectedOperation: operation } });
+    } else {
+      alert(translations[language].upgradeMessage);
+    }
+  };
+
+  return (
+    <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
+      <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
+      <div className="grid grid-cols-2 gap-4">
+        {Object.entries(translations[language].options).map(([key, value]) => (
+          <Button
+            key={key}
+            onClick={() => handleOperationSelect(key)}
+            disabled={!isOperationAllowed(key)}
+            className={`bg-tertiary text-white hover:bg-quaternary transition-colors ${!isOperationAllowed(key) && 'opacity-50 cursor-not-allowed'}`}
+          >
+            {value}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default OperationSelection;
