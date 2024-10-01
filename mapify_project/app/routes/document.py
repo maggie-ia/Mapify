@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.document import Document
-from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases
-from app.services.concept_map_service import generate_concept_map
+from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases, generate_concept_map
 from app import db
 from werkzeug.utils import secure_filename
 import os
@@ -102,7 +101,10 @@ def create_concept_map(doc_id):
     if document.user_id != get_jwt_identity():
         return jsonify({"message": "Unauthorized"}), 403
     
+    user = User.query.get(get_jwt_identity())
     max_nodes = 6  # Por defecto para membresía básica
+    if user.membership_type == 'premium':
+        max_nodes = None  # Sin límite para membresía premium
     
     concept_map_image = generate_concept_map(document.content, max_nodes)
     
