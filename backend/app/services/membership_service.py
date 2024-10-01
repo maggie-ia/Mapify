@@ -25,14 +25,13 @@ def increment_export(user_id):
 def get_membership_info(user_id):
     user = User.query.get(user_id)
     membership_info = user.get_membership_info()
-    membership_info['price'] = Membership.get_price(user.membership_type)
     return membership_info
 
 def update_membership(user_id, new_membership_type):
     user = User.query.get(user_id)
-    user.update_membership(new_membership_type)
+    current_price = Membership.get_price(new_membership_type)
+    user.update_membership(new_membership_type, current_price)
     updated_info = user.get_membership_info()
-    updated_info['price'] = Membership.get_price(new_membership_type)
     return updated_info
 
 def can_translate_to_language(user_id, language):
@@ -71,19 +70,23 @@ def get_notifications(user_id):
     if user.is_trial:
         days_left = (user.trial_end_date - datetime.utcnow()).days
         if days_left <= 3:
-            notifications.append(f"Your trial period will end in {days_left} days.")
+            notifications.append(f"Tu período de prueba terminará en {days_left} días.")
     
     if user.membership_type != 'premium':
         operations_left = user.get_weekly_operations_remaining()
         if operations_left <= 2:
-            notifications.append(f"You have only {operations_left} operations left this week.")
+            notifications.append(f"Te quedan solo {operations_left} operaciones esta semana.")
     
     return notifications
 
 def get_renewal_reminder(user_id):
     user = User.query.get(user_id)
     if user.membership_type in ['basic', 'premium']:
-        days_until_renewal = (user.membership_end_date - datetime.utcnow()).days
+        days_until_renewal = (user.monthly_reset - datetime.utcnow()).days
         if days_until_renewal <= 7:
-            return f"Your membership will renew in {days_until_renewal} days."
+            current_price = Membership.get_price(user.membership_type)
+            if current_price > user.membership_price:
+                return f"Tu membresía se renovará en {days_until_renewal} días. El nuevo precio será de ${current_price:.2f}."
+            else:
+                return f"Tu membresía se renovará en {days_until_renewal} días al precio actual de ${user.membership_price:.2f}."
     return None

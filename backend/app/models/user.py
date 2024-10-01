@@ -8,6 +8,7 @@ class User(db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     membership_type = db.Column(db.String(20), default='free')
+    membership_price = db.Column(db.Float, default=0.0)  # New field for grandfathering
     weekly_operations = db.Column(db.Integer, default=0)
     weekly_exports = db.Column(db.Integer, default=0)
     last_reset = db.Column(db.DateTime, default=datetime.utcnow)
@@ -25,10 +26,12 @@ class User(db.Model):
         self.is_trial = True
         self.trial_end_date = datetime.utcnow() + timedelta(days=days)
         self.membership_type = 'premium'
+        self.membership_price = 0.0  # Trial is free
 
     def end_trial(self):
         self.is_trial = False
         self.membership_type = 'free'
+        self.membership_price = 0.0
 
     def can_perform_operation(self):
         self._reset_counters_if_needed()
@@ -87,8 +90,9 @@ class User(db.Model):
         else:  # free
             return language in ['en', 'es']  # Solo inglés y español para usuarios gratuitos
 
-    def update_membership(self, new_membership_type):
+    def update_membership(self, new_membership_type, new_price):
         self.membership_type = new_membership_type
+        self.membership_price = new_price
         self._reset_counters_if_needed()
         db.session.commit()
 
@@ -96,6 +100,7 @@ class User(db.Model):
         self._reset_counters_if_needed()
         return {
             'membership_type': self.membership_type,
+            'membership_price': self.membership_price,
             'is_trial': self.is_trial,
             'trial_end_date': self.trial_end_date.isoformat() if self.trial_end_date else None,
             'weekly_operations_remaining': self.get_weekly_operations_remaining(),

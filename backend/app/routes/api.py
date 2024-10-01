@@ -154,10 +154,10 @@ def get_user_notifications():
 
 @api.route('/renewal-reminder', methods=['GET'])
 @jwt_required()
-def get_renewal_reminder():
+def get_user_renewal_reminder():
     user_id = get_jwt_identity()
     reminder = get_renewal_reminder(user_id)
-    return jsonify(reminder), 200
+    return jsonify({"reminder": reminder}), 200
 
 @api.route('/membership-prices', methods=['GET'])
 def get_membership_prices():
