@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
+import { getLocalizationInfo, formatPrice } from '../services/localizationService';
 
 const MembershipOptions = ({ onSelect }) => {
   const { language } = useLanguage();
+  const [localizationInfo, setLocalizationInfo] = useState({ currency: 'USD', countryCode: 'US' });
+
+  useEffect(() => {
+    const fetchLocalizationInfo = async () => {
+      const info = await getLocalizationInfo();
+      setLocalizationInfo(info);
+    };
+    fetchLocalizationInfo();
+  }, []);
 
   const memberships = {
     free: {
@@ -29,7 +39,7 @@ const MembershipOptions = ({ onSelect }) => {
           'Accès limité aux documents jusque à 5 pages'
         ]
       },
-      price: '0'
+      price: 0
     },
     basic: {
       name: {
@@ -60,7 +70,7 @@ const MembershipOptions = ({ onSelect }) => {
           'Jusque à 10 exportations de contenu dans n importe quel format'
         ]
       },
-      price: '9.99'
+      price: 9.99
     },
     premium: {
       name: {
@@ -88,7 +98,7 @@ const MembershipOptions = ({ onSelect }) => {
           'Exportation de contenu dans différents formats (PDF, TXT, DOCX)'
         ]
       },
-      price: '19.99'
+      price: 19.99
     }
   };
 
@@ -103,9 +113,9 @@ const MembershipOptions = ({ onSelect }) => {
             ))}
           </ul>
           <p className="text-3xl font-bold mb-4 text-tertiary">
-            {membership.price === '0' ? 
+            {membership.price === 0 ? 
               (language === 'es' ? 'Gratis' : language === 'en' ? 'Free' : 'Gratuit') : 
-              `$${membership.price}/` + (language === 'es' ? 'mes' : language === 'en' ? 'month' : 'mois')}
+              `${formatPrice(membership.price, localizationInfo.currency, localizationInfo.countryCode)}/` + (language === 'es' ? 'mes' : language === 'en' ? 'month' : 'mois')}
           </p>
           <Button 
             onClick={() => onSelect(key)} 
