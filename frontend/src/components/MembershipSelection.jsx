@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
 
-const MembershipSelection = () => {
+const MembershipSelection = ({ onSelect }) => {
     const { language } = useLanguage();
 
     const translations = {
@@ -80,7 +80,10 @@ const MembershipSelection = () => {
                 </ul>
             </CardContent>
             <CardFooter>
-                <Button className="w-full bg-tertiary text-white hover:bg-quaternary transition-colors">
+                <Button 
+                    onClick={() => onSelect(type)} 
+                    className="w-full bg-tertiary text-white hover:bg-quaternary transition-colors"
+                >
                     {translations[language].selectButton}
                 </Button>
             </CardFooter>
