@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.document import Document
 from app.models.user import User
-from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases, generate_concept_map
+from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases, generate_concept_map, translate_text
 from app import db
 from werkzeug.utils import secure_filename
 import os
@@ -115,3 +115,22 @@ def create_concept_map(doc_id):
         as_attachment=True,
         download_name=f'concept_map_{doc_id}.png'
     )
+
+@document_bp.route('/<int:doc_id>/translate', methods=['POST'])
+@jwt_required()
+def translate_document(doc_id):
+    document = Document.query.get_or_404(doc_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    target_language = request.json.get('target_language')
+    if not target_language:
+        return jsonify({"message": "Target language is required"}), 400
+    
+    user = User.query.get(get_jwt_identity())
+    allowed_languages = ['en', 'es', 'fr', 'de']  # Idiomas permitidos para membresía básica
+    if user.membership_type != 'premium' and target_language not in allowed_languages:
+        return jsonify({"message": "Language not available for your membership level"}), 403
+    
+    translated_text = translate_text(document.content, target_language)
+    return jsonify({"translated_text": translated_text}), 200

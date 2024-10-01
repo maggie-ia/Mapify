@@ -7,6 +7,7 @@ import numpy as np
 import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
+from deep_translator import GoogleTranslator
 
 summarizer = pipeline("summarization")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
@@ -111,3 +112,15 @@ def generate_concept_map(text, max_nodes=6):
     img_buffer.seek(0)
     
     return img_buffer.getvalue()
+
+def translate_text(text, target_language):
+    """
+    Traduce el texto dado al idioma especificado.
+    
+    :param text: Texto a traducir.
+    :param target_language: Idioma de destino (código de dos letras, ej. 'en', 'fr', 'es').
+    :return: Texto traducido.
+    """
+    translator = GoogleTranslator(source='auto', target=target_language)
+    translated_text = translator.translate(text)
+    return translated_text
