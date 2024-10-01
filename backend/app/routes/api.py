@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.user import User
 from app.models.document import Document
+from app.models.membership import Membership
 from app.services.text_processing import (
     summarize_text, paraphrase_text, synthesize_text,
     generate_concept_map, extract_relevant_phrases, translate_text
@@ -158,13 +159,8 @@ def get_renewal_reminder():
     reminder = get_renewal_reminder(user_id)
     return jsonify(reminder), 200
 
-@api.route('/localization', methods=['GET'])
-def get_localization_info():
-    # Aquí deberías implementar la lógica para determinar la ubicación del usuario
-    # Por ahora, devolveremos información predeterminada
-    return jsonify({
-        "currency": "USD",
-        "countryCode": "US"
-    })
-
-# ... (resto del código existente)
+@api.route('/membership-prices', methods=['GET'])
+def get_membership_prices():
+    memberships = Membership.query.all()
+    prices = {membership.name: float(membership.price) for membership in memberships}
+    return jsonify(prices), 200
