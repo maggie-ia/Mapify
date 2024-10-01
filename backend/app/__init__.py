@@ -13,8 +13,6 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    # Aquí puedes registrar tus blueprints
-    # from app.routes import main_bp
-    # app.register_blueprint(main_bp)
+    from app import models
 
     return app
