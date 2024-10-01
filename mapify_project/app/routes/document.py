@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.document import Document
-from app.services.text_processing import summarize_text, paraphrase_text
+from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases
 from app.services.concept_map_service import generate_concept_map
 from app import db
 from werkzeug.utils import secure_filename
@@ -74,6 +74,26 @@ def paraphrase_document(doc_id):
     
     paraphrased = paraphrase_text(document.content)
     return jsonify({"paraphrased": paraphrased}), 200
+
+@document_bp.route('/<int:doc_id>/synthesize', methods=['POST'])
+@jwt_required()
+def synthesize_document(doc_id):
+    document = Document.query.get_or_404(doc_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    synthesis = synthesize_text(document.content)
+    return jsonify({"synthesis": synthesis}), 200
+
+@document_bp.route('/<int:doc_id>/relevant_phrases', methods=['POST'])
+@jwt_required()
+def extract_relevant_phrases_from_document(doc_id):
+    document = Document.query.get_or_404(doc_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"message": "Unauthorized"}), 403
+    
+    relevant_phrases = extract_relevant_phrases(document.content)
+    return jsonify({"relevant_phrases": relevant_phrases}), 200
 
 @document_bp.route('/<int:doc_id>/concept_map', methods=['POST'])
 @jwt_required()

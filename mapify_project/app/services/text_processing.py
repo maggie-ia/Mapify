@@ -2,6 +2,8 @@ import PyPDF2
 from io import BytesIO
 from transformers import pipeline
 import docx
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 
 summarizer = pipeline("summarization")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
@@ -62,4 +64,26 @@ def synthesize_text(text, max_length=200, min_length=100):
     synthesis = paraphrase_text(summary, max_length=max_length)
     return synthesis
 
-# Aquí puedes agregar más funciones según sea necesario, como extract_relevant_phrases y translate_text
+def extract_relevant_phrases(text, num_phrases=5):
+    """
+    Extrae las frases más relevantes del texto utilizando TF-IDF.
+    """
+    # Dividir el texto en oraciones
+    sentences = text.split('.')
+    
+    # Crear y ajustar el vectorizador TF-IDF
+    vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = vectorizer.fit_transform(sentences)
+    
+    # Calcular la importancia de cada oración
+    sentence_scores = tfidf_matrix.sum(axis=1).A1
+    
+    # Obtener los índices de las oraciones más importantes
+    top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
+    
+    # Extraer y devolver las frases más relevantes
+    relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
+    
+    return relevant_phrases
+
+# Aquí puedes agregar más funciones según sea necesario, como translate_text
