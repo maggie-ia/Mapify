@@ -1,7 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
-import PlanUpgrade from '../components/PlanUpgrade';
 
 const Settings = () => {
   const { language, changeLanguage } = useLanguage();
@@ -10,57 +8,46 @@ const Settings = () => {
     es: {
       title: 'Configuración',
       language: 'Idioma',
-      membership: 'Membresía',
-      currentPlan: 'Plan actual',
-      upgradePlan: 'Actualizar plan',
+      spanish: 'Español',
+      english: 'Inglés',
+      french: 'Francés'
     },
     en: {
       title: 'Settings',
       language: 'Language',
-      membership: 'Membership',
-      currentPlan: 'Current plan',
-      upgradePlan: 'Upgrade plan',
+      spanish: 'Spanish',
+      english: 'English',
+      french: 'French'
     },
     fr: {
       title: 'Paramètres',
       language: 'Langue',
-      membership: 'Adhésion',
-      currentPlan: 'Plan actuel',
-      upgradePlan: 'Mettre à niveau',
-    },
+      spanish: 'Espagnol',
+      english: 'Anglais',
+      french: 'Français'
+    }
   };
 
   return (
-    <View className="flex-1 p-6 bg-[#a7e3f4]">
-      <Text className="text-4xl font-bold mb-6 text-center text-[#545454]">{translations[language].title}</Text>
-      
-      <View className="mb-6">
-        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].language}</Text>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded mb-2"
-          onPress={() => changeLanguage('es')}
-        >
-          <Text className="text-white text-center">Español</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded mb-2"
-          onPress={() => changeLanguage('en')}
-        >
-          <Text className="text-white text-center">English</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded"
-          onPress={() => changeLanguage('fr')}
-        >
-          <Text className="text-white text-center">Français</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View>
-        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].membership}</Text>
-        <PlanUpgrade />
-      </View>
-    </View>
+    <div className="max-w-md mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center">{translations[language].title}</h1>
+      <div className="bg-quinary p-6 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">{translations[language].language}</h2>
+        <div className="space-y-2">
+          {['es', 'en', 'fr'].map((lang) => (
+            <button
+              key={lang}
+              onClick={() => changeLanguage(lang)}
+              className={`w-full text-left px-4 py-2 rounded-lg ${
+                language === lang ? 'bg-tertiary text-white' : 'bg-white text-primary hover:bg-tertiary hover:text-white'
+              } transition-colors`}
+            >
+              {translations[language][lang === 'es' ? 'spanish' : lang === 'en' ? 'english' : 'french']}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
