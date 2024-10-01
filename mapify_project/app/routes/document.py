@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.document import Document
+from app.models.user import User
 from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases, generate_concept_map
 from app import db
 from werkzeug.utils import secure_filename
