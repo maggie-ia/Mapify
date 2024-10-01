@@ -44,7 +44,7 @@ const OperationSelection = ({ onSelect }) => {
         if (user.membership === 'premium') return true;
         if (user.membership === 'basic') {
             if (operation === 'conceptMap') return true;
-            return ['summarize', 'paraphrase', 'translate'].includes(operation);
+            return ['summarize', 'paraphrase', 'translate', 'relevantPhrases'].includes(operation);
         }
         if (user.membership === 'free') {
             return ['summarize', 'paraphrase', 'translate'].includes(operation);
