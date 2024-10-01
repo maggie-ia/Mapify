@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { processText } from '../services/textProcessingService';
 import ResultDisplay from '../components/ResultDisplay';
+import ExportOptions from '../components/ExportOptions';
 
 const Results = () => {
   const location = useLocation();
@@ -61,6 +62,7 @@ const Results = () => {
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
       {result && <ResultDisplay result={result} operationType={operation} />}
+      {result && <ExportOptions result={result} operationType={operation} />}
     </div>
   );
 };
