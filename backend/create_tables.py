@@ -30,6 +30,17 @@ def create_tables():
             missing_tables = expected_tables - set(existing_tables)
             if missing_tables:
                 print(f"Warning: The following tables are missing: {missing_tables}")
+                print("Attempting to create missing tables individually...")
+                for table in missing_tables:
+                    if table == User.__tablename__:
+                        User.__table__.create(db.engine)
+                    elif table == Document.__tablename__:
+                        Document.__table__.create(db.engine)
+                    elif table == Operation.__tablename__:
+                        Operation.__table__.create(db.engine)
+                    elif table == Export.__tablename__:
+                        Export.__table__.create(db.engine)
+                print("Individual table creation attempt completed.")
             else:
                 print("All expected tables exist in the database.")
 
