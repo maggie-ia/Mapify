@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
 
-const FileUpload = () => {
+const FileUpload = ({ onFileUpload }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
     const { language } = useLanguage();
@@ -51,10 +51,7 @@ const FileUpload = () => {
 
     const handleUpload = () => {
         if (file) {
-            // Aquí iría la lógica para subir el archivo al servidor
-            console.log('Subiendo archivo:', file.name);
-            // Por ahora, solo simularemos la subida
-            alert(`Archivo ${file.name} subido con éxito!`);
+            onFileUpload(file);
         }
     };
 
