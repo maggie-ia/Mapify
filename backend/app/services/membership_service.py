@@ -74,3 +74,11 @@ def get_notifications(user_id):
             notifications.append(f"You have only {operations_left} operations left this week.")
     
     return notifications
+
+def get_renewal_reminder(user_id):
+    user = User.query.get(user_id)
+    if user.membership_type in ['basic', 'premium']:
+        days_until_renewal = (user.membership_end_date - datetime.utcnow()).days
+        if days_until_renewal <= 7:
+            return f"Your membership will renew in {days_until_renewal} days."
+    return None

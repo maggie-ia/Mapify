@@ -9,7 +9,8 @@ from app.services.text_processing import (
 from app.services.membership_service import (
     can_perform_operation, can_export, increment_operation, increment_export, 
     get_membership_info, update_membership, can_translate_to_language, get_page_limit,
-    start_trial, get_usage_history, check_trial_expiration, get_notifications
+    start_trial, get_usage_history, check_trial_expiration, get_notifications,
+    get_renewal_reminder
 )
 from app import db
 
@@ -149,3 +150,10 @@ def get_user_notifications():
     user_id = get_jwt_identity()
     notifications = get_notifications(user_id)
     return jsonify(notifications), 200
+
+@api.route('/renewal-reminder', methods=['GET'])
+@jwt_required()
+def get_renewal_reminder():
+    user_id = get_jwt_identity()
+    reminder = get_renewal_reminder(user_id)
+    return jsonify(reminder), 200
