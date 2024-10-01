@@ -3,10 +3,10 @@ import sys
 from sqlalchemy import inspect
 
 # Añadir el directorio padre al sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from backend.app import create_app, db
-from backend.app.models import User, Document, Operation, Export
+from app import create_app, db
+from app.models import User, Document, Operation, Export
 
 app = create_app()
 
@@ -24,10 +24,10 @@ def create_tables():
             print(f"Existing tables in the database: {existing_tables}")
 
             # Verificar si todas las tablas definidas en los modelos existen
-            expected_tables = db.metadata.tables.keys()
+            expected_tables = set([User.__tablename__, Document.__tablename__, Operation.__tablename__, Export.__tablename__])
             print(f"Expected tables based on models: {expected_tables}")
 
-            missing_tables = set(expected_tables) - set(existing_tables)
+            missing_tables = expected_tables - set(existing_tables)
             if missing_tables:
                 print(f"Warning: The following tables are missing: {missing_tables}")
             else:
