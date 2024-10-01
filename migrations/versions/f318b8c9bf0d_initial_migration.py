@@ -15,20 +15,13 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    # Verificar si la tabla 'documents' existe
-    conn = op.get_bind()
-    inspector = sa.inspect(conn)
-    if 'documents' in inspector.get_table_names():
-        # Si la tabla existe, intentamos eliminar la clave foránea si existe
-        try:
-            op.drop_constraint('fk_documents_user_id', 'documents', type_='foreignkey')
-        except:
-            pass  # Si la clave foránea no existe, simplemente continuamos
-        
-        # Eliminamos la tabla existente
-        op.drop_table('documents')
+    # Primero, eliminamos las claves foráneas que dependen de 'documents'
+    op.drop_constraint('fk_operations_document_id', 'operations', type_='foreignkey')
     
-    # Creamos la nueva tabla 'documents'
+    # Ahora podemos eliminar la tabla 'documents' de forma segura
+    op.drop_table('documents')
+    
+    # Recreamos la tabla 'documents'
     op.create_table('documents',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('filename', sa.String(length=255), nullable=False),
@@ -39,11 +32,15 @@ def upgrade():
         sa.PrimaryKeyConstraint('id')
     )
     
-    # Creamos la nueva clave foránea
+    # Recreamos la clave foránea en 'documents'
     op.create_foreign_key('fk_documents_user_id', 'documents', 'users', ['user_id'], ['id'])
+    
+    # Recreamos la clave foránea en 'operations'
+    op.create_foreign_key('fk_operations_document_id', 'operations', 'documents', ['document_id'], ['id'])
 
 def downgrade():
-    # Eliminamos la clave foránea
+    # Eliminamos las claves foráneas
+    op.drop_constraint('fk_operations_document_id', 'operations', type_='foreignkey')
     op.drop_constraint('fk_documents_user_id', 'documents', type_='foreignkey')
     
     # Eliminamos la tabla 'documents'
