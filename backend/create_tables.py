@@ -6,13 +6,13 @@ from sqlalchemy import inspect
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend.app import create_app, db
-from backend.config import Config
+from backend.app.models import User, Document, Operation, Export
 
 app = create_app()
 
 def create_tables():
     with app.app_context():
-        print(f"Attempting to connect to database: {Config.SQLALCHEMY_DATABASE_URI}")
+        print(f"Attempting to connect to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
         try:
             # Intentar crear las tablas
             db.create_all()
