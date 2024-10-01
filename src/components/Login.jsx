@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { login } = useAuth();
 
   const translations = {
     es: {
@@ -37,28 +39,17 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Store the token in localStorage or a secure storage
-        localStorage.setItem('token', data.token);
-        navigate('/');
-      } else {
-        // Handle login errors
-        console.error('Login failed');
-      }
+      await login(email, password);
+      navigate('/');
     } catch (error) {
       console.error('Error during login:', error);
+      // Here you would typically show an error message to the user
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-5 text-center">{translations[language].title}</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-5 text-center text-primary">{translations[language].title}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="email"
@@ -66,6 +57,7 @@ const Login = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder={translations[language].email}
           required
+          className="w-full px-3 py-2 border rounded-md"
         />
         <Input
           type="password"
@@ -73,13 +65,14 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder={translations[language].password}
           required
+          className="w-full px-3 py-2 border rounded-md"
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-tertiary text-white hover:bg-quaternary">
           {translations[language].login}
         </Button>
       </form>
-      <p className="mt-4 text-center">
-        <a href="/register" className="text-blue-500 hover:underline">
+      <p className="mt-4 text-center text-quaternary">
+        <a href="/register" className="hover:underline">
           {translations[language].register}
         </a>
       </p>

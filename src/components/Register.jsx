@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -10,6 +11,7 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { register } = useAuth();
 
   const translations = {
     es: {
@@ -41,25 +43,17 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
-      });
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        // Handle errors
-        console.error('Registration failed');
-      }
+      await register(username, email, password);
+      navigate('/');
     } catch (error) {
       console.error('Error during registration:', error);
+      // Here you would typically show an error message to the user
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h2 className="text-2xl font-bold mb-5 text-center">{translations[language].title}</h2>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-5 text-center text-primary">{translations[language].title}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="text"
@@ -67,6 +61,7 @@ const Register = () => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder={translations[language].username}
           required
+          className="w-full px-3 py-2 border rounded-md"
         />
         <Input
           type="email"
@@ -74,6 +69,7 @@ const Register = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder={translations[language].email}
           required
+          className="w-full px-3 py-2 border rounded-md"
         />
         <Input
           type="password"
@@ -81,13 +77,14 @@ const Register = () => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder={translations[language].password}
           required
+          className="w-full px-3 py-2 border rounded-md"
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full bg-tertiary text-white hover:bg-quaternary">
           {translations[language].register}
         </Button>
       </form>
-      <p className="mt-4 text-center">
-        <a href="/login" className="text-blue-500 hover:underline">
+      <p className="mt-4 text-center text-quaternary">
+        <a href="/login" className="hover:underline">
           {translations[language].login}
         </a>
       </p>
