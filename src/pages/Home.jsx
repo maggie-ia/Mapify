@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import FileUpload from '../components/FileUpload';
 
 const Home = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
 
   const translations = {
     es: {
@@ -20,11 +22,15 @@ const Home = () => {
     }
   };
 
+  const handleFileUploadSuccess = () => {
+    navigate('/operation-selection');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-4 text-center text-primary">{translations[language].welcome}</h1>
       <p className="text-xl mb-8 text-center text-quaternary">{translations[language].description}</p>
-      <FileUpload />
+      <FileUpload onUploadSuccess={handleFileUploadSuccess} />
     </div>
   );
 };
