@@ -8,26 +8,34 @@ const Header = () => {
   const translations = {
     es: {
       home: 'Inicio',
-      settings: 'Configuración',
+      upload: 'Subir',
+      results: 'Resultados',
+      settings: 'Configuración'
     },
     en: {
       home: 'Home',
-      settings: 'Settings',
+      upload: 'Upload',
+      results: 'Results',
+      settings: 'Settings'
     },
     fr: {
       home: 'Accueil',
-      settings: 'Paramètres',
-    },
+      upload: 'Télécharger',
+      results: 'Résultats',
+      settings: 'Paramètres'
+    }
   };
 
   return (
-    <header className="bg-[#545454] text-white p-4">
-      <nav className="flex justify-between items-center">
+    <header className="bg-primary text-white p-4">
+      <nav className="container mx-auto flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold">Mapify</Link>
-        <div>
-          <Link to="/" className="mr-4">{translations[language].home}</Link>
-          <Link to="/settings">{translations[language].settings}</Link>
-        </div>
+        <ul className="flex space-x-4">
+          <li><Link to="/" className="hover:text-tertiary transition-colors">{translations[language].home}</Link></li>
+          <li><Link to="/upload" className="hover:text-tertiary transition-colors">{translations[language].upload}</Link></li>
+          <li><Link to="/results" className="hover:text-tertiary transition-colors">{translations[language].results}</Link></li>
+          <li><Link to="/settings" className="hover:text-tertiary transition-colors">{translations[language].settings}</Link></li>
+        </ul>
       </nav>
     </header>
   );
