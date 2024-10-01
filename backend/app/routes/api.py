@@ -157,3 +157,14 @@ def get_renewal_reminder():
     user_id = get_jwt_identity()
     reminder = get_renewal_reminder(user_id)
     return jsonify(reminder), 200
+
+@api.route('/localization', methods=['GET'])
+def get_localization_info():
+    # Aquí deberías implementar la lógica para determinar la ubicación del usuario
+    # Por ahora, devolveremos información predeterminada
+    return jsonify({
+        "currency": "USD",
+        "countryCode": "US"
+    })
+
+# ... (resto del código existente)
