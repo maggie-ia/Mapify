@@ -2,7 +2,7 @@ import os
 import sys
 from sqlalchemy import inspect
 
-# Añadir el directorio padre al sys.path
+# Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from app import create_app, db
@@ -14,33 +14,29 @@ def create_tables():
     with app.app_context():
         print(f"Attempting to connect to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
         try:
-            # Intentar crear las tablas
-            db.create_all()
-            print("create_all() executed without errors.")
+            # Create tables in the correct order
+            tables = [User.__table__, Document.__table__, Operation.__table__, Export.__table__]
+            for table in tables:
+                if not inspect(db.engine).has_table(table.name):
+                    print(f"Creating table: {table.name}")
+                    table.create(db.engine)
+                else:
+                    print(f"Table {table.name} already exists")
 
-            # Verificar qué tablas existen realmente en la base de datos
+            print("All tables created successfully.")
+
+            # Verify existing tables
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
             print(f"Existing tables in the database: {existing_tables}")
 
-            # Verificar si todas las tablas definidas en los modelos existen
+            # Verify if all expected tables exist
             expected_tables = set([User.__tablename__, Document.__tablename__, Operation.__tablename__, Export.__tablename__])
             print(f"Expected tables based on models: {expected_tables}")
 
             missing_tables = expected_tables - set(existing_tables)
             if missing_tables:
                 print(f"Warning: The following tables are missing: {missing_tables}")
-                print("Attempting to create missing tables individually...")
-                for table in missing_tables:
-                    if table == User.__tablename__:
-                        User.__table__.create(db.engine)
-                    elif table == Document.__tablename__:
-                        Document.__table__.create(db.engine)
-                    elif table == Operation.__tablename__:
-                        Operation.__table__.create(db.engine)
-                    elif table == Export.__tablename__:
-                        Export.__table__.create(db.engine)
-                print("Individual table creation attempt completed.")
             else:
                 print("All expected tables exist in the database.")
 
