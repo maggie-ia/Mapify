@@ -1,35 +1,35 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LanguageProvider } from './contexts/LanguageContext';
-import Header from './components/Header';
-import Home from './pages/Home';
-import OperationSelection from './pages/OperationSelection';
-import Results from './pages/Results';
-import Settings from './pages/Settings';
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import Header from "./components/Header";
+import Home from "./pages/Home";
+import OptionsSelection from "./pages/OptionsSelection";
+import Results from "./pages/Results";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <Router>
-          <div className="min-h-screen bg-secondary text-primary">
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <div className="min-h-screen bg-white text-[#545454]">
             <Header />
-            <main className="container mx-auto px-4 py-8">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/operation-selection" element={<OperationSelection />} />
-                <Route path="/results" element={<Results />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
-            </main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/options" element={<OptionsSelection />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
           </div>
-        </Router>
-      </LanguageProvider>
-    </QueryClientProvider>
-  );
-}
+        </BrowserRouter>
+      </TooltipProvider>
+    </LanguageProvider>
+  </QueryClientProvider>
+);
 
 export default App;
