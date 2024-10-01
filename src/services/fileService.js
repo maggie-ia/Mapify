@@ -18,13 +18,3 @@ export const uploadFile = async (file) => {
         throw error;
     }
 };
-
-export const getSummary = async (fileId) => {
-    try {
-        const response = await axios.get(`${API_URL}/summarize/${fileId}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error get summary:', error);
-        throw error;
-    }
-};

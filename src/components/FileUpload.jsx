@@ -3,10 +3,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
+import { uploadFile } from '../services/fileService';
 
-const FileUpload = ({ onFileUpload }) => {
+const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
     const { language } = useLanguage();
 
     const translations = {
@@ -14,25 +16,34 @@ const FileUpload = ({ onFileUpload }) => {
             title: 'Subir Archivo',
             selectFile: 'Seleccionar archivo',
             upload: 'Subir',
+            uploading: 'Subiendo...',
             fileSelected: 'Archivo seleccionado:',
             noFileSelected: 'Ningún archivo seleccionado',
             invalidFileType: 'Tipo de archivo no válido. Por favor, seleccione un archivo PDF, TXT o DOCX.',
+            uploadSuccess: 'Archivo subido con éxito',
+            uploadError: 'Error al subir el archivo',
         },
         en: {
             title: 'Upload File',
             selectFile: 'Select file',
             upload: 'Upload',
+            uploading: 'Uploading...',
             fileSelected: 'File selected:',
             noFileSelected: 'No file selected',
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
+            uploadSuccess: 'File uploaded successfully',
+            uploadError: 'Error uploading file',
         },
         fr: {
             title: 'Télécharger un fichier',
             selectFile: 'Sélectionner un fichier',
             upload: 'Télécharger',
+            uploading: 'Téléchargement en cours...',
             fileSelected: 'Fichier sélectionné :',
             noFileSelected: 'Aucun fichier sélectionné',
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
+            uploadSuccess: 'Fichier téléchargé avec succès',
+            uploadError: 'Erreur lors du téléchargement du fichier',
         }
     };
 
@@ -49,14 +60,24 @@ const FileUpload = ({ onFileUpload }) => {
         }
     };
 
-    const handleUpload = () => {
+    const handleUpload = async () => {
         if (file) {
-            onFileUpload(file);
+            setIsUploading(true);
+            try {
+                const response = await uploadFile(file);
+                onFileUploaded(response);
+                setIsUploading(false);
+                setFile(null);
+                // You might want to show a success message here
+            } catch (error) {
+                setError(translations[language].uploadError);
+                setIsUploading(false);
+            }
         }
     };
 
     return (
-        <div className="max-w-md mx-auto mt-10">
+        <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
             <h2 className="text-2xl font-bold mb-4 text-primary">{translations[language].title}</h2>
             <Input 
                 type="file" 
@@ -75,10 +96,10 @@ const FileUpload = ({ onFileUpload }) => {
             )}
             <Button 
                 onClick={handleUpload} 
-                disabled={!file}
+                disabled={!file || isUploading}
                 className="w-full bg-tertiary hover:bg-quaternary text-white"
             >
-                {translations[language].upload}
+                {isUploading ? translations[language].uploading : translations[language].upload}
             </Button>
         </div>
     );
