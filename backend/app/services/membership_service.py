@@ -4,6 +4,20 @@ from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
 
+def get_membership_info(user_id):
+    user = User.query.get(user_id)
+    membership_info = user.get_membership_info()
+    membership_info['current_price'] = user.membership_price
+    membership_info['current_market_price'] = Membership.get_price(user.membership_type)
+    return membership_info
+
+def update_membership(user_id, new_membership_type):
+    user = User.query.get(user_id)
+    current_price = Membership.get_price(new_membership_type)
+    user.update_membership(new_membership_type, current_price)
+    updated_info = user.get_membership_info()
+    return updated_info
+
 def can_perform_operation(user_id):
     user = User.query.get(user_id)
     return user.can_perform_operation()
@@ -21,18 +35,6 @@ def increment_export(user_id):
     user = User.query.get(user_id)
     user.increment_export()
     add_usage_history(user_id, 'export')
-
-def get_membership_info(user_id):
-    user = User.query.get(user_id)
-    membership_info = user.get_membership_info()
-    return membership_info
-
-def update_membership(user_id, new_membership_type):
-    user = User.query.get(user_id)
-    current_price = Membership.get_price(new_membership_type)
-    user.update_membership(new_membership_type, current_price)
-    updated_info = user.get_membership_info()
-    return updated_info
 
 def can_translate_to_language(user_id, language):
     user = User.query.get(user_id)
