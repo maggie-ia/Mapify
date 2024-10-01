@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.usage_history import UsageHistory
+from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
 
@@ -23,12 +24,16 @@ def increment_export(user_id):
 
 def get_membership_info(user_id):
     user = User.query.get(user_id)
-    return user.get_membership_info()
+    membership_info = user.get_membership_info()
+    membership_info['price'] = Membership.get_price(user.membership_type)
+    return membership_info
 
 def update_membership(user_id, new_membership_type):
     user = User.query.get(user_id)
     user.update_membership(new_membership_type)
-    return user.get_membership_info()
+    updated_info = user.get_membership_info()
+    updated_info['price'] = Membership.get_price(new_membership_type)
+    return updated_info
 
 def can_translate_to_language(user_id, language):
     user = User.query.get(user_id)
