@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import FileUpload from '../components/FileUpload';
+import OperationSelection from '../components/OperationSelection';
 import { Button } from "../components/ui/button";
 
 const Home = () => {
