@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import OptionsSelection from "./pages/OptionsSelection";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
+import MembershipSelection from "./pages/MembershipSelection";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
               <Route path="/options" element={<OptionsSelection />} />
               <Route path="/results" element={<Results />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/membership" element={<MembershipSelection />} />
             </Routes>
           </div>
         </BrowserRouter>

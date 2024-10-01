@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import PlanUpgrade from '../components/PlanUpgrade';
+import { Button } from "../components/ui/button";
 
 const Settings = () => {
+  const navigate = useNavigate();
   const { language, changeLanguage } = useLanguage();
+  // Esto debería venir de un contexto de usuario o de una llamada a la API
+  const currentMembership = 'free';
 
   const translations = {
     es: {
@@ -13,6 +16,9 @@ const Settings = () => {
       membership: 'Membresía',
       currentPlan: 'Plan actual',
       upgradePlan: 'Actualizar plan',
+      free: 'Gratuito',
+      basic: 'Básico',
+      premium: 'Premium'
     },
     en: {
       title: 'Settings',
@@ -20,6 +26,9 @@ const Settings = () => {
       membership: 'Membership',
       currentPlan: 'Current plan',
       upgradePlan: 'Upgrade plan',
+      free: 'Free',
+      basic: 'Basic',
+      premium: 'Premium'
     },
     fr: {
       title: 'Paramètres',
@@ -27,40 +36,39 @@ const Settings = () => {
       membership: 'Adhésion',
       currentPlan: 'Plan actuel',
       upgradePlan: 'Mettre à niveau',
-    },
+      free: 'Gratuit',
+      basic: 'De base',
+      premium: 'Premium'
+    }
+  };
+
+  const handleUpgrade = () => {
+    navigate('/membership');
   };
 
   return (
-    <View className="flex-1 p-6 bg-[#a7e3f4]">
-      <Text className="text-4xl font-bold mb-6 text-center text-[#545454]">{translations[language].title}</Text>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
       
-      <View className="mb-6">
-        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].language}</Text>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded mb-2"
-          onPress={() => changeLanguage('es')}
-        >
-          <Text className="text-white text-center">Español</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded mb-2"
-          onPress={() => changeLanguage('en')}
-        >
-          <Text className="text-white text-center">English</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className="bg-[#11ccf5] p-2 rounded"
-          onPress={() => changeLanguage('fr')}
-        >
-          <Text className="text-white text-center">Français</Text>
-        </TouchableOpacity>
-      </View>
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-quaternary">{translations[language].language}</h2>
+        <div className="flex space-x-4">
+          <Button onClick={() => changeLanguage('es')} className="bg-tertiary text-white">Español</Button>
+          <Button onClick={() => changeLanguage('en')} className="bg-tertiary text-white">English</Button>
+          <Button onClick={() => changeLanguage('fr')} className="bg-tertiary text-white">Français</Button>
+        </div>
+      </div>
 
-      <View>
-        <Text className="text-2xl font-semibold mb-2 text-[#3a7ca5]">{translations[language].membership}</Text>
-        <PlanUpgrade />
-      </View>
-    </View>
+      <div>
+        <h2 className="text-2xl font-semibold mb-4 text-quaternary">{translations[language].membership}</h2>
+        <p className="mb-4 text-primary">
+          {translations[language].currentPlan}: {translations[language][currentMembership]}
+        </p>
+        <Button onClick={handleUpgrade} className="bg-tertiary text-white">
+          {translations[language].upgradePlan}
+        </Button>
+      </div>
+    </div>
   );
 };
 
