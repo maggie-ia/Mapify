@@ -4,15 +4,6 @@ import { handleApiError } from '../utils/errorHandling';
 
 const API_URL = '/api';
 
-/**
- * Procesa el texto según la operación especificada.
- * @param {Object} params - Parámetros de la operación.
- * @param {string} params.operation - Tipo de operación a realizar.
- * @param {string} params.text - Texto a procesar.
- * @param {string} [params.targetLanguage] - Idioma objetivo para traducción.
- * @param {number} [params.pageCount] - Número estimado de páginas.
- * @returns {Promise<Object>} - Resultado del procesamiento.
- */
 export const processText = async ({ operation, text, targetLanguage, pageCount }) => {
   try {
     await checkMembershipLimits(operation, pageCount);
@@ -24,6 +15,9 @@ export const processText = async ({ operation, text, targetLanguage, pageCount }
     });
     return { ...response.data, operationType: operation };
   } catch (error) {
+    if (error.message.includes('not allowed') || error.message.includes('exceeds')) {
+      throw error; // Re-throw membership-related errors
+    }
     return handleApiError(error, `Error processing text (${operation})`);
   }
 };
@@ -35,6 +29,15 @@ export const createConceptMap = async (text, pageCount) => processText({ operati
 export const extractRelevantPhrases = async (text, pageCount) => processText({ operation: 'relevantPhrases', text, pageCount });
 export const translateText = async (text, targetLanguage, pageCount) => 
   processText({ operation: 'translate', text, targetLanguage, pageCount });
+
+export const getWritingAssistance = async ({ text, membershipType }) => {
+  try {
+    const response = await axios.post(`${API_URL}/writing-assistance`, { text, membershipType });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error, 'Error getting writing assistance');
+  }
+};
 
 export const exportResult = async (result, format) => {
   try {

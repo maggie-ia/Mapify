@@ -8,10 +8,12 @@ import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
 from deep_translator import GoogleTranslator
+import language_tool_python
 
 summarizer = pipeline("summarization")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 nlp = spacy.load("es_core_news_sm")
+tool = language_tool_python.LanguageTool('en-US')
 
 def extract_text_from_pdf(file_content):
     """
@@ -124,3 +126,26 @@ def translate_text(text, target_language):
     translator = GoogleTranslator(source='auto', target=target_language)
     translated_text = translator.translate(text)
     return translated_text
+
+def get_writing_assistance(text, membership_type):
+    """
+    Proporciona sugerencias de escritura basadas en el texto proporcionado.
+    
+    :param text: Texto a analizar.
+    :param membership_type: Tipo de membresía del usuario.
+    :return: Lista de sugerencias.
+    """
+    matches = tool.check(text)
+    suggestions = []
+    
+    for match in matches:
+        if membership_type == 'premium' or (membership_type == 'basic' and match.ruleIssueType in ['grammar', 'typos']):
+            suggestion = {
+                'original': text[match.offset:match.offset + match.errorLength],
+                'suggested': match.replacements[0] if match.replacements else '',
+                'message': match.message,
+                'type': match.ruleIssueType
+            }
+            suggestions.append(suggestion)
+    
+    return suggestions[:10]  # Limitar a 10 sugerencias para evitar sobrecarga
