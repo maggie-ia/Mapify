@@ -9,7 +9,6 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import RelevantPhrases from './RelevantPhrases';
 import ConceptMap from './ConceptMap';
-import SaveShareConversation from './SaveShareConversation';
 import ConversationCategories from './ConversationCategories';
 import { toast } from 'react-hot-toast';
 
@@ -193,7 +192,6 @@ const AIChat = ({ documentId }) => {
                     {translations[language].send}
                 </Button>
             </div>
-            <SaveShareConversation messages={messages} />
             <ConversationCategories />
         </div>
     );

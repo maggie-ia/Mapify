@@ -116,22 +116,6 @@ def save_conversation():
     
     return jsonify({"message": "Conversation saved successfully"}), 200
 
-@chat.route('/share', methods=['POST'])
-@jwt_required()
-def share_conversation():
-    user_id = get_jwt_identity()
-    data = request.json
-    messages = data.get('messages')
-    
-    if not messages:
-        return jsonify({"error": "No messages provided"}), 400
-    
-    # Here you would implement logic to create a shareable link
-    # For this example, we'll just return a dummy link
-    share_link = f"https://yourdomain.com/shared-conversation/{user_id}"
-    
-    return jsonify({"shareLink": share_link}), 200
-
 @chat.route('/categories', methods=['GET'])
 @jwt_required()
 def get_conversation_categories():
