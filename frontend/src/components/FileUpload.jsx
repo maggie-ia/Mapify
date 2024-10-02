@@ -6,7 +6,7 @@ import { Alert } from "./ui/alert";
 import { uploadFile } from '../services/fileService';
 import { useAuth } from '../hooks/useAuth';
 import FileSizeLimitInfo from './FileSizeLimitInfo';
-import { createWorker } from 'tesseract.js';
+import ProgressBar from './ProgressBar';
 import { toast } from 'react-hot-toast';
 
 const FileUpload = ({ onFileUploaded }) => {
@@ -14,7 +14,7 @@ const FileUpload = ({ onFileUploaded }) => {
     const [error, setError] = useState('');
     const [warning, setWarning] = useState('');
     const [isUploading, setIsUploading] = useState(false);
-    const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+    const [progress, setProgress] = useState(0);
     const { language } = useLanguage();
     const { user } = useAuth();
 
@@ -90,7 +90,6 @@ const FileUpload = ({ onFileUploaded }) => {
             } else {
                 setFile(selectedFile);
                 setError('');
-                // Set warning if file size is within 10% of the limit
                 if (selectedFile.size > maxSize * 0.9) {
                     setWarning(translations[language].fileSizeWarning);
                 } else {
@@ -104,32 +103,14 @@ const FileUpload = ({ onFileUploaded }) => {
         }
     };
 
-    const processOCR = useCallback(async (fileBuffer) => {
-        const worker = await createWorker('eng');
-        try {
-            const { data: { text } } = await worker.recognize(fileBuffer);
-            await worker.terminate();
-            return text;
-        } catch (error) {
-            console.error('OCR Error:', error);
-            throw new Error(translations[language].ocrError);
-        }
-    }, [language]);
-
     const handleUpload = async () => {
         if (file) {
             setIsUploading(true);
+            setProgress(0);
             try {
-                const fileBuffer = await file.arrayBuffer();
-                setIsProcessingOCR(true);
-                const ocrText = await processOCR(fileBuffer);
-                setIsProcessingOCR(false);
-
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('ocrText', ocrText);
-
-                const response = await uploadFile(formData);
+                const response = await uploadFile(file, (progress) => {
+                    setProgress(progress);
+                });
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
@@ -138,7 +119,6 @@ const FileUpload = ({ onFileUploaded }) => {
             } catch (error) {
                 setError(error.message || translations[language].uploadError);
                 setIsUploading(false);
-                setIsProcessingOCR(false);
                 toast.error(error.message || translations[language].uploadError);
             }
         }
@@ -165,13 +145,19 @@ const FileUpload = ({ onFileUploaded }) => {
             )}
             <Button 
                 onClick={handleUpload} 
-                disabled={!file || isUploading || isProcessingOCR}
-                className="w-full bg-tertiary hover:bg-quaternary text-white"
+                disabled={!file || isUploading}
+                className="w-full bg-tertiary hover:bg-quaternary text-white mb-4"
             >
-                {isUploading ? translations[language].uploading : 
-                 isProcessingOCR ? translations[language].processing :
-                 translations[language].upload}
+                {isUploading ? translations[language].uploading : translations[language].upload}
             </Button>
+            {isUploading && (
+                <div className="mt-4">
+                    <p className="mb-2 text-quaternary">
+                        {file.type === 'application/pdf' ? translations[language].processing : translations[language].uploading}
+                    </p>
+                    <ProgressBar progress={progress} />
+                </div>
+            )}
             <FileSizeLimitInfo />
         </div>
     );
