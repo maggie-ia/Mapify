@@ -22,11 +22,15 @@ def update_user_membership():
     user_id = get_jwt_identity()
     data = request.json
     new_membership_type = data.get('membership_type')
+    new_duration = data.get('duration')
     
     if new_membership_type not in ['free', 'basic', 'premium']:
         return jsonify({"error": "Invalid membership type"}), 400
+    
+    if new_duration not in ['monthly', 'sixMonths', 'yearly']:
+        return jsonify({"error": "Invalid duration"}), 400
 
-    updated_info = update_membership(user_id, new_membership_type)
+    updated_info = update_membership(user_id, new_membership_type, new_duration)
     return jsonify(updated_info), 200
 
 @membership.route('/start-trial', methods=['POST'])
@@ -69,5 +73,11 @@ def get_user_renewal_reminder():
 @membership.route('/membership-prices', methods=['GET'])
 def get_membership_prices():
     memberships = Membership.query.all()
-    prices = {membership.name: float(membership.price) for membership in memberships}
+    prices = {
+        membership.name: {
+            membership.duration: float(membership.price)
+            for membership in Membership.query.filter_by(name=membership.name).all()
+        }
+        for membership in set(Membership.query.with_entities(Membership.name).all())
+    }
     return jsonify(prices), 200

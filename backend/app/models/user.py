@@ -8,7 +8,10 @@ class User(db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     membership_type = db.Column(db.String(20), default='free')
+    membership_duration = db.Column(db.String(20), default='monthly')
     membership_price = db.Column(db.Float, default=0.0)
+    membership_start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    membership_end_date = db.Column(db.DateTime, default=datetime.utcnow)
     weekly_operations = db.Column(db.Integer, default=0)
     weekly_exports = db.Column(db.Integer, default=0)
     last_reset = db.Column(db.DateTime, default=datetime.utcnow)
@@ -29,11 +32,31 @@ class User(db.Model):
         self.trial_end_date = datetime.utcnow() + timedelta(days=days)
         self.membership_type = 'premium'
         self.membership_price = 0.0
+        self.membership_duration = 'monthly'
+        self.membership_end_date = self.trial_end_date
 
     def end_trial(self):
         self.is_trial = False
         self.membership_type = 'free'
         self.membership_price = 0.0
+        self.membership_duration = 'monthly'
+        self.membership_end_date = datetime.utcnow()
+
+    def update_membership(self, new_membership_type, new_duration, new_price):
+        self.membership_type = new_membership_type
+        self.membership_duration = new_duration
+        self.membership_price = new_price
+        self.membership_start_date = datetime.utcnow()
+        
+        if new_duration == 'monthly':
+            self.membership_end_date = self.membership_start_date + timedelta(days=30)
+        elif new_duration == 'sixMonths':
+            self.membership_end_date = self.membership_start_date + timedelta(days=180)
+        elif new_duration == 'yearly':
+            self.membership_end_date = self.membership_start_date + timedelta(days=365)
+        
+        self._reset_counters_if_needed()
+        db.session.commit()
 
     def can_perform_operation(self):
         self._reset_counters_if_needed()
@@ -94,6 +117,19 @@ class User(db.Model):
             self.monthly_reset = now
         if self.is_trial and now > self.trial_end_date:
             self.end_trial()
+        if now > self.membership_end_date:
+            self.renew_membership()
+        db.session.commit()
+
+    def renew_membership(self):
+        if self.membership_type != 'free':
+            self.membership_start_date = datetime.utcnow()
+            if self.membership_duration == 'monthly':
+                self.membership_end_date = self.membership_start_date + timedelta(days=30)
+            elif self.membership_duration == 'sixMonths':
+                self.membership_end_date = self.membership_start_date + timedelta(days=180)
+            elif self.membership_duration == 'yearly':
+                self.membership_end_date = self.membership_start_date + timedelta(days=365)
         db.session.commit()
 
     def get_page_limit(self):
@@ -113,17 +149,14 @@ class User(db.Model):
         else:  # free
             return language in ['en', 'es']
 
-    def update_membership(self, new_membership_type, new_price):
-        self.membership_type = new_membership_type
-        self.membership_price = new_price
-        self._reset_counters_if_needed()
-        db.session.commit()
-
     def get_membership_info(self):
         self._reset_counters_if_needed()
         return {
             'membership_type': self.membership_type,
+            'membership_duration': self.membership_duration,
             'membership_price': self.membership_price,
+            'membership_start_date': self.membership_start_date.isoformat(),
+            'membership_end_date': self.membership_end_date.isoformat(),
             'is_trial': self.is_trial,
             'trial_end_date': self.trial_end_date.isoformat() if self.trial_end_date else None,
             'weekly_operations_remaining': self.get_weekly_operations_remaining(),

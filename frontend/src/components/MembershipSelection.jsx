@@ -7,6 +7,7 @@ import { getLocalizationInfo, formatPrice } from '../services/localizationServic
 const MembershipSelection = ({ onSelect }) => {
     const { language } = useLanguage();
     const [localizationInfo, setLocalizationInfo] = useState({ currency: 'USD', countryCode: 'US' });
+    const [selectedDuration, setSelectedDuration] = useState('monthly');
 
     useEffect(() => {
         const fetchLocalizationInfo = async () => {
@@ -36,7 +37,12 @@ const MembershipSelection = ({ onSelect }) => {
             },
             selectButton: 'Seleccionar',
             freeLabel: 'Gratis',
-            perMonth: '/mes'
+            perMonth: '/mes',
+            perSixMonths: '/6 meses',
+            perYear: '/año',
+            monthly: 'Mensual',
+            sixMonths: '6 Meses',
+            yearly: 'Anual'
         },
         en: {
             title: 'Select your plan',
@@ -57,7 +63,12 @@ const MembershipSelection = ({ onSelect }) => {
             },
             selectButton: 'Select',
             freeLabel: 'Free',
-            perMonth: '/month'
+            perMonth: '/month',
+            perSixMonths: '/6 months',
+            perYear: '/year',
+            monthly: 'Monthly',
+            sixMonths: '6 Months',
+            yearly: 'Yearly'
         },
         fr: {
             title: 'Choisissez votre plan',
@@ -78,14 +89,40 @@ const MembershipSelection = ({ onSelect }) => {
             },
             selectButton: 'Sélectionner',
             freeLabel: 'Gratuit',
-            perMonth: '/mois'
+            perMonth: '/mois',
+            perSixMonths: '/6 mois',
+            perYear: '/an',
+            monthly: 'Mensuel',
+            sixMonths: '6 Mois',
+            yearly: 'Annuel'
         }
     };
 
     const memberships = {
         free: { price: 0 },
-        basic: { price: 9.99 },
-        premium: { price: 19.99 }
+        basic: { 
+            monthly: 9.99,
+            sixMonths: 54.99,
+            yearly: 99.99
+        },
+        premium: { 
+            monthly: 19.99,
+            sixMonths: 109.99,
+            yearly: 199.99
+        }
+    };
+
+    const getDurationLabel = (duration) => {
+        switch (duration) {
+            case 'monthly':
+                return translations[language].perMonth;
+            case 'sixMonths':
+                return translations[language].perSixMonths;
+            case 'yearly':
+                return translations[language].perYear;
+            default:
+                return '';
+        }
     };
 
     const renderMembershipCard = (type) => (
@@ -100,16 +137,29 @@ const MembershipSelection = ({ onSelect }) => {
                         <li key={index} className="text-quaternary">{feature}</li>
                     ))}
                 </ul>
+                {type !== 'free' && (
+                    <div className="mt-4">
+                        <select 
+                            value={selectedDuration} 
+                            onChange={(e) => setSelectedDuration(e.target.value)}
+                            className="w-full p-2 border rounded"
+                        >
+                            <option value="monthly">{translations[language].monthly}</option>
+                            <option value="sixMonths">{translations[language].sixMonths}</option>
+                            <option value="yearly">{translations[language].yearly}</option>
+                        </select>
+                    </div>
+                )}
                 <p className="mt-4 text-2xl font-bold text-tertiary">
-                    {memberships[type].price === 0 
+                    {type === 'free' 
                         ? translations[language].freeLabel 
-                        : `${formatPrice(memberships[type].price, localizationInfo.currency, localizationInfo.countryCode)}${translations[language].perMonth}`
+                        : `${formatPrice(memberships[type][selectedDuration], localizationInfo.currency, localizationInfo.countryCode)}${getDurationLabel(selectedDuration)}`
                     }
                 </p>
             </CardContent>
             <CardFooter>
                 <Button 
-                    onClick={() => onSelect(type)} 
+                    onClick={() => onSelect(type, selectedDuration)} 
                     className="w-full bg-tertiary text-white hover:bg-quaternary transition-colors"
                 >
                     {translations[language].selectButton}

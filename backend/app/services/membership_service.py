@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
 
@@ -27,13 +28,13 @@ def get_membership_info(user_id):
     user = User.query.get(user_id)
     membership_info = user.get_membership_info()
     membership_info['current_price'] = user.membership_price
-    membership_info['current_market_price'] = Membership.get_price(user.membership_type)
+    membership_info['current_market_price'] = Membership.get_price(user.membership_type, user.membership_duration)
     return membership_info
 
-def update_membership(user_id, new_membership_type):
+def update_membership(user_id, new_membership_type, new_duration):
     user = User.query.get(user_id)
-    current_price = Membership.get_price(new_membership_type)
-    user.update_membership(new_membership_type, current_price)
+    current_price = Membership.get_price(new_membership_type, new_duration)
+    user.update_membership(new_membership_type, new_duration, current_price)
     updated_info = user.get_membership_info()
     return updated_info
 
@@ -94,9 +95,9 @@ def get_notifications(user_id):
 def get_renewal_reminder(user_id):
     user = User.query.get(user_id)
     if user.membership_type in ['basic', 'premium']:
-        days_until_renewal = (user.monthly_reset - datetime.utcnow()).days
+        days_until_renewal = (user.membership_end_date - datetime.utcnow()).days
         if days_until_renewal <= 7:
-            current_price = Membership.get_price(user.membership_type)
+            current_price = Membership.get_price(user.membership_type, user.membership_duration)
             if current_price > user.membership_price:
                 return f"Tu membresía se renovará en {days_until_renewal} días. El nuevo precio será de ${current_price:.2f}."
             else:
