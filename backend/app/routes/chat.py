@@ -3,8 +3,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.user import User
 from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
+from app.models.conversation_category import ConversationCategory
 from app import db
-from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map, answer_document_question
+from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map, answer_document_question, generate_suggested_questions
 from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
@@ -77,7 +78,67 @@ def send_chat_message(document_id):
         
         increment_operation(user_id, 'chat')
         
-        return jsonify({"userMessage": user_message, "aiResponse": ai_message}), 200
+        suggested_questions = generate_suggested_questions(document.content, ai_message['content'])
+        
+        return jsonify({
+            "userMessage": user_message, 
+            "aiResponse": ai_message,
+            "suggestedQuestions": suggested_questions
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@chat.route('/save', methods=['POST'])
+@jwt_required()
+def save_conversation():
+    user_id = get_jwt_identity()
+    data = request.json
+    messages = data.get('messages')
+    
+    if not messages:
+        return jsonify({"error": "No messages provided"}), 400
+    
+    conversation = ChatConversation(user_id=user_id, conversation_data=messages)
+    db.session.add(conversation)
+    db.session.commit()
+    
+    return jsonify({"message": "Conversation saved successfully"}), 200
+
+@chat.route('/share', methods=['POST'])
+@jwt_required()
+def share_conversation():
+    user_id = get_jwt_identity()
+    data = request.json
+    messages = data.get('messages')
+    
+    if not messages:
+        return jsonify({"error": "No messages provided"}), 400
+    
+    # Here you would implement logic to create a shareable link
+    # For this example, we'll just return a dummy link
+    share_link = f"https://yourdomain.com/shared-conversation/{user_id}"
+    
+    return jsonify({"shareLink": share_link}), 200
+
+@chat.route('/categories', methods=['GET'])
+@jwt_required()
+def get_conversation_categories():
+    categories = ConversationCategory.query.all()
+    return jsonify([{"id": cat.id, "name": cat.name} for cat in categories]), 200
+
+@chat.route('/feedback', methods=['POST'])
+@jwt_required()
+def submit_feedback():
+    user_id = get_jwt_identity()
+    data = request.json
+    message_id = data.get('messageId')
+    is_positive = data.get('isPositive')
+    
+    if message_id is None or is_positive is None:
+        return jsonify({"error": "Invalid feedback data"}), 400
+    
+    # Here you would implement logic to store the feedback
+    # For this example, we'll just return a success message
+    
+    return jsonify({"message": "Feedback submitted successfully"}), 200

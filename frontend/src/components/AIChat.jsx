@@ -9,12 +9,16 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import RelevantPhrases from './RelevantPhrases';
 import ConceptMap from './ConceptMap';
+import SaveShareConversation from './SaveShareConversation';
+import ConversationCategories from './ConversationCategories';
 import { toast } from 'react-hot-toast';
 
 const AIChat = ({ documentId }) => {
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [operation, setOperation] = useState('chat');
+    const [feedback, setFeedback] = useState(null);
+    const [suggestedQuestions, setSuggestedQuestions] = useState([]);
     const { user } = useAuth();
     const { language } = useLanguage();
 
@@ -31,7 +35,10 @@ const AIChat = ({ documentId }) => {
             conceptMap: "Mapa Conceptual",
             askDocument: "Preguntar sobre el documento",
             errorSending: "Error al enviar el mensaje",
-            errorOperation: "Error al realizar la operación"
+            errorOperation: "Error al realizar la operación",
+            feedbackPositive: "¿Fue útil esta respuesta?",
+            feedbackNegative: "¿No fue útil esta respuesta?",
+            suggestedQuestions: "Preguntas sugeridas:"
         },
         en: {
             placeholder: "Type your question here...",
@@ -45,7 +52,10 @@ const AIChat = ({ documentId }) => {
             conceptMap: "Concept Map",
             askDocument: "Ask about the document",
             errorSending: "Error sending message",
-            errorOperation: "Error performing operation"
+            errorOperation: "Error performing operation",
+            feedbackPositive: "Was this response helpful?",
+            feedbackNegative: "Was this response not helpful?",
+            suggestedQuestions: "Suggested questions:"
         },
         fr: {
             placeholder: "Écrivez votre question ici...",
@@ -59,7 +69,10 @@ const AIChat = ({ documentId }) => {
             conceptMap: "Carte Conceptuelle",
             askDocument: "Poser une question sur le document",
             errorSending: "Erreur lors de l'envoi du message",
-            errorOperation: "Erreur lors de l'exécution de l'opération"
+            errorOperation: "Erreur lors de l'exécution de l'opération",
+            feedbackPositive: "Cette réponse était-elle utile ?",
+            feedbackNegative: "Cette réponse n'était-elle pas utile ?",
+            suggestedQuestions: "Questions suggérées :"
         }
     };
 
@@ -80,6 +93,7 @@ const AIChat = ({ documentId }) => {
         onSuccess: (data) => {
             setMessages(prevMessages => [...prevMessages, data.data.userMessage, data.data.aiResponse]);
             setInputMessage('');
+            setSuggestedQuestions(data.data.suggestedQuestions || []);
         },
         onError: (error) => {
             toast.error(translations[language].errorSending);
@@ -91,6 +105,12 @@ const AIChat = ({ documentId }) => {
         if (inputMessage.trim()) {
             sendMessageMutation.mutate({ message: inputMessage, operation });
         }
+    };
+
+    const handleFeedback = (messageId, isPositive) => {
+        // Implement feedback logic here
+        setFeedback({ messageId, isPositive });
+        // You might want to send this feedback to the server
     };
 
     if (user.membership_type !== 'premium') {
@@ -120,6 +140,16 @@ const AIChat = ({ documentId }) => {
                 {messages.map((msg, index) => (
                     <div key={index} className={`mb-2 p-2 rounded ${msg.sender === 'user' ? 'bg-tertiary text-white' : 'bg-secondary'}`}>
                         {msg.content}
+                        {msg.sender === 'ai' && (
+                            <div className="mt-2">
+                                <Button onClick={() => handleFeedback(index, true)} className="mr-2">
+                                    {translations[language].feedbackPositive}
+                                </Button>
+                                <Button onClick={() => handleFeedback(index, false)}>
+                                    {translations[language].feedbackNegative}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 ))}
                 {messages.length > 0 && messages[messages.length - 1].operation === 'relevantPhrases' && (
@@ -129,6 +159,16 @@ const AIChat = ({ documentId }) => {
                     <ConceptMap conceptMapImage={messages[messages.length - 1].content} />
                 )}
             </ScrollArea>
+            {suggestedQuestions.length > 0 && (
+                <div className="mb-4">
+                    <p className="font-bold">{translations[language].suggestedQuestions}</p>
+                    {suggestedQuestions.map((question, index) => (
+                        <Button key={index} onClick={() => setInputMessage(question)} className="mr-2 mb-2">
+                            {question}
+                        </Button>
+                    ))}
+                </div>
+            )}
             <div className="flex">
                 <Input
                     type="text"
@@ -141,6 +181,8 @@ const AIChat = ({ documentId }) => {
                     {translations[language].send}
                 </Button>
             </div>
+            <SaveShareConversation messages={messages} />
+            <ConversationCategories />
         </div>
     );
 };
