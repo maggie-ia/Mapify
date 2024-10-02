@@ -8,7 +8,6 @@ from app import db
 from app.services.ai_service import (
     process_ai_response, generate_suggested_questions
 )
-from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
 
@@ -37,8 +36,8 @@ def send_chat_message(document_id):
     if user.membership_type != 'premium':
         return jsonify({"error": "Chat access is only available for premium users"}), 403
     
-    if not can_perform_operation(user_id, 'chat'):
-        return jsonify({"error": "You have reached your chat limit for this period"}), 403
+    if not user.can_use_chat():
+        return jsonify({"error": "You have reached your chat usage limit for this period"}), 403
     
     data = request.json
     message = data.get('message')
@@ -65,7 +64,7 @@ def send_chat_message(document_id):
         conversation.conversation_data.append(ai_message)
         db.session.commit()
         
-        increment_operation(user_id, 'chat')
+        user.increment_chat_usage()
         
         suggested_questions = generate_suggested_questions(document.content, ai_response)
         
@@ -77,22 +76,6 @@ def send_chat_message(document_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
-@chat.route('/save', methods=['POST'])
-@jwt_required()
-def save_conversation():
-    user_id = get_jwt_identity()
-    data = request.json
-    messages = data.get('messages')
-    
-    if not messages:
-        return jsonify({"error": "No messages provided"}), 400
-    
-    conversation = ChatConversation(user_id=user_id, conversation_data=messages)
-    db.session.add(conversation)
-    db.session.commit()
-    
-    return jsonify({"message": "Conversation saved successfully"}), 200
 
 @chat.route('/categories', methods=['GET'])
 @jwt_required()

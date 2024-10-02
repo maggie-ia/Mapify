@@ -11,7 +11,6 @@ class ChatConversation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     feedback = db.Column(db.Enum('positive', 'negative', 'neutral'), default='neutral')
-    share_link = db.Column(db.String(255), unique=True)
     category_id = db.Column(db.Integer, db.ForeignKey('conversation_categories.id'))
 
     category = db.relationship('ConversationCategory', backref='conversations')
