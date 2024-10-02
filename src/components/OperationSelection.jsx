@@ -3,13 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
-import { useMutation } from '@tanstack/react-query';
-import { summarizeText, paraphraseText, synthesizeText, createConceptMap, translateText } from '../services/textProcessingService';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { processText } from '../services/textProcessingService';
 
 const OperationSelection = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
+
+  const { data: membershipInfo, isLoading } = useQuery({
+    queryKey: ['membershipInfo'],
+    queryFn: async () => {
+      const response = await axios.get('/api/membership-info');
+      return response.data;
+    },
+  });
 
   const translations = {
     es: {
@@ -19,8 +28,10 @@ const OperationSelection = () => {
         paraphrase: 'Parafrasear',
         synthesize: 'Sintetizar',
         conceptMap: 'Mapa Conceptual',
+        relevantPhrases: 'Frases Relevantes',
         translate: 'Traducir',
       },
+      operationsLeft: 'Operaciones restantes: ',
     },
     en: {
       title: 'Select an operation',
@@ -29,8 +40,10 @@ const OperationSelection = () => {
         paraphrase: 'Paraphrase',
         synthesize: 'Synthesize',
         conceptMap: 'Concept Map',
+        relevantPhrases: 'Relevant Phrases',
         translate: 'Translate',
       },
+      operationsLeft: 'Operations left: ',
     },
     fr: {
       title: 'Sélectionnez une opération',
@@ -39,30 +52,15 @@ const OperationSelection = () => {
         paraphrase: 'Paraphraser',
         synthesize: 'Synthétiser',
         conceptMap: 'Carte Conceptuelle',
+        relevantPhrases: 'Phrases Pertinentes',
         translate: 'Traduire',
       },
+      operationsLeft: 'Opérations restantes : ',
     },
   };
 
   const processTextMutation = useMutation({
-    mutationFn: async ({ operation, text }) => {
-      switch (operation) {
-        case 'summarize':
-          return await summarizeText(text);
-        case 'paraphrase':
-          return await paraphraseText(text);
-        case 'synthesize':
-          return await synthesizeText(text);
-        case 'conceptMap':
-          return await createConceptMap(text);
-        case 'translate':
-          // For translation, we'll need to prompt the user for the target language
-          const targetLanguage = prompt('Enter target language code (e.g., "es" for Spanish):');
-          return await translateText(text, targetLanguage);
-        default:
-          throw new Error('Invalid operation');
-      }
-    },
+    mutationFn: ({ operation, text }) => processText(operation, text),
     onSuccess: (result) => {
       navigate('/results', { state: { result } });
     },
@@ -73,24 +71,34 @@ const OperationSelection = () => {
   });
 
   const handleOperationSelect = (operation) => {
-    const text = localStorage.getItem('uploadedText'); // Assume text is stored after file upload
+    const text = localStorage.getItem('uploadedText');
     processTextMutation.mutate({ operation, text });
   };
 
   const isOperationAllowed = (operation) => {
-    if (user.membership === 'premium') return true;
-    if (user.membership === 'basic') {
-      return ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'translate'].includes(operation);
+    if (!membershipInfo) return false;
+    if (membershipInfo.membership_type === 'premium') return true;
+    if (membershipInfo.membership_type === 'basic') {
+      return ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'].includes(operation);
     }
-    if (user.membership === 'free') {
+    if (membershipInfo.membership_type === 'free') {
       return ['summarize', 'paraphrase', 'translate'].includes(operation);
     }
     return false;
   };
 
+  if (isLoading) return <div>Loading...</div>;
+
   return (
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
+      {membershipInfo && (
+        <p className="text-center mb-4 text-quaternary">
+          {translations[language].operationsLeft}
+          {membershipInfo.membership_type === 'premium' ? 'Unlimited' : 
+           membershipInfo.weekly_operations_remaining}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         {Object.entries(translations[language].options).map(([key, value]) => (
           <Button

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Asumiendo que este es el endpoint de nuestro backend
+const API_URL = 'http://localhost:5000/api';
 
 const processText = async (operation, text, additionalParams = {}) => {
     try {
