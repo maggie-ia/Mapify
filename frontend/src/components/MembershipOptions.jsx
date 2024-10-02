@@ -49,7 +49,8 @@ const MembershipOptions = ({ onSelect }) => {
           'Acceso ilimitado a todas las funciones sin restricciones',
           'Traducción a todos los idiomas disponibles',
           'Generación avanzada de mapas conceptuales sin límite de nodos',
-          'Exportación de contenido en diferentes formatos (PDF, TXT, DOCX)'
+          'Exportación de contenido en diferentes formatos (PDF, TXT, DOCX)',
+          'Acceso al Chat IA para asistencia avanzada'
         ]
       },
       selectButton: 'Seleccionar',
@@ -82,7 +83,8 @@ const MembershipOptions = ({ onSelect }) => {
           'Unlimited access to all features without restrictions',
           'Translation to all available languages',
           'Advanced concept map generation without node limit',
-          'Content export in different formats (PDF, TXT, DOCX)'
+          'Content export in different formats (PDF, TXT, DOCX)',
+          'Access to AI Chat for advanced assistance'
         ]
       },
       selectButton: 'Select',
@@ -115,7 +117,8 @@ const MembershipOptions = ({ onSelect }) => {
           'Accès illimité à toutes les fonctionnalités sans restrictions',
           'Traduction dans toutes les langues disponibles',
           'Génération avancée de cartes conceptuelles sans limite de nœuds',
-          'Exportation de contenu dans différents formats (PDF, TXT, DOCX)'
+          'Exportation de contenu dans différents formats (PDF, TXT, DOCX)',
+          'Accès au Chat IA pour une assistance avancée'
         ]
       },
       selectButton: 'Sélectionner',
