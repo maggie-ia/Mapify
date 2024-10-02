@@ -2,52 +2,42 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api'; // Asumiendo que este es el endpoint de nuestro backend
 
-export const summarizeText = async (text) => {
+const processText = async (operation, text, additionalParams = {}) => {
     try {
-        const response = await axios.post(`${API_URL}/summarize`, { text });
-        return response.data.summary;
+        const response = await axios.post(`${API_URL}/process`, { operation, text, ...additionalParams });
+        return response.data;
     } catch (error) {
-        console.error('Error summarizing text:', error);
+        console.error(`Error processing text (${operation}):`, error);
         throw error;
     }
+};
+
+export const summarizeText = async (text) => {
+    return processText('summarize', text);
 };
 
 export const paraphraseText = async (text) => {
-    try {
-        const response = await axios.post(`${API_URL}/paraphrase`, { text });
-        return response.data.paraphrase;
-    } catch (error) {
-        console.error('Error paraphrasing text:', error);
-        throw error;
-    }
+    return processText('paraphrase', text);
 };
 
 export const synthesizeText = async (text) => {
-    try {
-        const response = await axios.post(`${API_URL}/synthesize`, { text });
-        return response.data.synthesis;
-    } catch (error) {
-        console.error('Error synthesizing text:', error);
-        throw error;
-    }
+    return processText('synthesize', text);
 };
 
 export const createConceptMap = async (text) => {
-    try {
-        const response = await axios.post(`${API_URL}/concept-map`, { text });
-        return response.data.conceptMap;
-    } catch (error) {
-        console.error('Error creating concept map:', error);
-        throw error;
-    }
+    return processText('conceptMap', text);
+};
+
+export const extractRelevantPhrases = async (text) => {
+    return processText('relevantPhrases', text);
 };
 
 export const translateText = async (text, targetLanguage) => {
-    try {
-        const response = await axios.post(`${API_URL}/translate`, { text, targetLanguage });
-        return response.data.translation;
-    } catch (error) {
-        console.error('Error translating text:', error);
-        throw error;
-    }
+    return processText('translate', text, { targetLanguage });
+};
+
+// Mantenemos la función original por compatibilidad
+export const processTextOld = async (operation, text) => {
+    console.warn('processTextOld is deprecated. Please use the specific functions instead.');
+    return processText(operation, text);
 };
