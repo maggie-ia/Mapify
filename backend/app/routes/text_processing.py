@@ -8,7 +8,7 @@ from app.services.text_processing import (
 )
 from app.services.membership_service import (
     can_perform_operation, increment_operation, get_page_limit,
-    can_translate_to_language
+    can_translate_to_language, get_concept_map_node_limit
 )
 from app import db
 
@@ -26,7 +26,7 @@ def process_text():
     if not user or not text or not operation:
         return jsonify({"error": "Invalid request"}), 400
 
-    if not can_perform_operation(user_id):
+    if not can_perform_operation(user_id, operation):
         return jsonify({"error": "Operation limit reached for your membership level"}), 403
 
     # Check page limit
@@ -41,13 +41,10 @@ def process_text():
         result = paraphrase_text(text)
     elif operation == 'synthesize':
         result = synthesize_text(text)
-    elif operation == 'concept_map':
-        if user.membership_type in ['basic', 'premium'] or user.is_trial:
-            max_nodes = None if user.membership_type == 'premium' or user.is_trial else 6
-            result = generate_concept_map(text, max_nodes)
-        else:
-            return jsonify({"error": "Upgrade membership to access this feature"}), 403
-    elif operation == 'relevant_phrases':
+    elif operation == 'conceptMap':
+        max_nodes = get_concept_map_node_limit(user_id)
+        result = generate_concept_map(text, max_nodes)
+    elif operation == 'relevantPhrases':
         result = extract_relevant_phrases(text)
     elif operation == 'translate':
         target_language = data.get('target_language')

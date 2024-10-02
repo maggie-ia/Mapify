@@ -3,23 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { processText } from '../services/textProcessingService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { isOperationAllowed, canTranslateToLanguage } from '../utils/membershipUtils';
 
 const OperationSelection = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
-
-  const { data: membershipInfo, isLoading } = useQuery({
-    queryKey: ['membershipInfo'],
-    queryFn: async () => {
-      const response = await fetch('/api/membership-info');
-      return response.json();
-    },
-  });
 
   const translations = {
     es: {
@@ -33,7 +26,6 @@ const OperationSelection = () => {
         translate: 'Traducir',
       },
       upgradeMessage: 'Actualiza tu membresía para acceder a esta función',
-      operationsLeft: 'Operaciones restantes: ',
       selectLanguage: 'Seleccionar idioma para traducción',
     },
     en: {
@@ -47,7 +39,6 @@ const OperationSelection = () => {
         translate: 'Translate',
       },
       upgradeMessage: 'Upgrade your membership to access this feature',
-      operationsLeft: 'Operations left: ',
       selectLanguage: 'Select language for translation',
     },
     fr: {
@@ -61,7 +52,6 @@ const OperationSelection = () => {
         translate: 'Traduire',
       },
       upgradeMessage: 'Mettez à niveau votre adhésion pour accéder à cette fonctionnalité',
-      operationsLeft: 'Opérations restantes : ',
       selectLanguage: 'Sélectionner la langue pour la traduction',
     },
   };
@@ -83,32 +73,9 @@ const OperationSelection = () => {
     processTextMutation.mutate({ operation, text, targetLanguage: selectedLanguage, pageCount });
   };
 
-  const isOperationAllowed = (operation) => {
-    if (!membershipInfo) return false;
-    if (membershipInfo.membership_type === 'premium') return true;
-    if (membershipInfo.membership_type === 'basic') {
-      return ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'].includes(operation);
-    }
-    if (membershipInfo.membership_type === 'free') {
-      return ['summarize', 'paraphrase', 'translate'].includes(operation);
-    }
-    return false;
-  };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
-      {membershipInfo && (
-        <p className="text-center mb-4 text-quaternary">
-          {translations[language].operationsLeft}
-          {membershipInfo.membership_type === 'premium' ? 'Unlimited' : 
-           membershipInfo.weekly_operations_remaining}
-        </p>
-      )}
       <div className="grid grid-cols-2 gap-4 mb-4">
         {Object.entries(translations[language].options).map(([key, value]) => (
           <Button
@@ -133,10 +100,10 @@ const OperationSelection = () => {
               <SelectValue placeholder="Select Language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Español</SelectItem>
-              <SelectItem value="fr">Français</SelectItem>
-              <SelectItem value="de">Deutsch</SelectItem>
+              <SelectItem value="en" disabled={!canTranslateToLanguage('en')}>English</SelectItem>
+              <SelectItem value="es" disabled={!canTranslateToLanguage('es')}>Español</SelectItem>
+              <SelectItem value="fr" disabled={!canTranslateToLanguage('fr')}>Français</SelectItem>
+              <SelectItem value="de" disabled={!canTranslateToLanguage('de')}>Deutsch</SelectItem>
             </SelectContent>
           </Select>
         </div>
