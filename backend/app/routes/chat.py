@@ -5,7 +5,11 @@ from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
 from app.models.conversation_category import ConversationCategory
 from app import db
-from app.services.ai_service import process_ai_response, generate_suggested_questions
+from app.services.ai_service import (
+    process_ai_response, generate_suggested_questions,
+    summarize_text, paraphrase_text, synthesize_text,
+    generate_concept_map, extract_relevant_phrases, translate_text
+)
 from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
@@ -58,9 +62,28 @@ def send_chat_message(document_id):
     conversation.conversation_data.append(user_message)
     
     try:
-        ai_response = process_ai_response(document.content, message, operation)
-        ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
+        ai_response = None
+        if operation == 'chat':
+            ai_response = process_ai_response(document.content, message)
+        elif operation == 'summarize':
+            ai_response = summarize_text(document.content)
+        elif operation == 'paraphrase':
+            ai_response = paraphrase_text(message)
+        elif operation == 'synthesize':
+            ai_response = synthesize_text(document.content)
+        elif operation == 'conceptMap':
+            ai_response = generate_concept_map(document.content)
+        elif operation == 'relevantPhrases':
+            ai_response = extract_relevant_phrases(document.content)
+        elif operation == 'translate':
+            target_language = data.get('target_language')
+            if not target_language:
+                return jsonify({"error": "Target language is required for translation"}), 400
+            ai_response = translate_text(message, target_language)
+        else:
+            return jsonify({"error": "Invalid operation"}), 400
         
+        ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
         conversation.conversation_data.append(ai_message)
         db.session.commit()
         
