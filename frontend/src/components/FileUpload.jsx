@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
-import { uploadFile } from '../services/fileService';
+import { uploadFile, processOCR } from '../services/fileService';
 import { useAuth } from '../hooks/useAuth';
 import FileSizeLimitInfo from './FileSizeLimitInfo';
 import ProgressBar from './ProgressBar';

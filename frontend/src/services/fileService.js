@@ -31,7 +31,7 @@ export const uploadFile = async (file, onProgress) => {
     }
 };
 
-const processOCR = async (file, onProgress) => {
+export const processOCR = async (file, onProgress) => {
     const cacheKey = await calculateFileHash(file);
     const cachedResult = await ocrCache.getItem(cacheKey);
     
