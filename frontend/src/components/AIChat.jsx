@@ -10,7 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import RelevantPhrases from './RelevantPhrases';
 import ConceptMap from './ConceptMap';
 import ConversationCategories from './ConversationCategories';
+import ChatPersonalization from './ChatPersonalization';
 import { toast } from 'react-hot-toast';
+import { debounce } from 'lodash';
+import { logChatInteraction } from '../services/analyticsService';
+import { validateInput, encryptSensitiveData, reportSuspiciousActivity } from '../services/securityService';
 
 const AIChat = ({ documentId }) => {
     const [messages, setMessages] = useState([]);
@@ -90,7 +94,12 @@ const AIChat = ({ documentId }) => {
     const { data: chatData, isLoading, error } = useQuery({
         queryKey: ['chatConversation', documentId],
         queryFn: () => axios.get(`/api/chat/${documentId}`).then(res => res.data),
-        enabled: user.membership_type === 'premium'
+        enabled: user.membership_type === 'premium',
+        retry: 3,
+        onError: (error) => {
+            console.error('Error fetching chat data:', error);
+            toast.error(translations[language].error);
+        }
     });
 
     useEffect(() => {
@@ -116,15 +125,27 @@ const AIChat = ({ documentId }) => {
         }
     });
 
-    const handleSendMessage = () => {
-        if (inputMessage.trim()) {
-            sendMessageMutation.mutate({ message: inputMessage, operation });
+    const handleSendMessage = debounce(() => {
+        const sanitizedInput = validateInput(inputMessage.trim());
+        if (sanitizedInput) {
+            logChatInteraction(user.id, 'send_message', { documentId, operation });
+            const encryptedMessage = encryptSensitiveData(sanitizedInput);
+            sendMessageMutation.mutate({ 
+                message: encryptedMessage, 
+                operation,
+                documentContext: chatData?.summary // Include document context
+            });
+        } else {
+            reportSuspiciousActivity(user.id, { action: 'invalid_input', input: inputMessage });
+            toast.error('Invalid input detected. Please try again.');
         }
-    };
+    }, 300);
 
     const handleFeedback = (messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
-        // Implementar lógica para enviar feedback al backend
+        axios.post('/api/chat/feedback', { messageId, isPositive })
+            .then(() => toast.success('Feedback enviado con éxito'))
+            .catch(() => toast.error('Error al enviar feedback'));
     };
 
     if (user.membership_type !== 'premium') {
@@ -139,6 +160,10 @@ const AIChat = ({ documentId }) => {
 
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
+            <ChatPersonalization 
+                onThemeChange={(theme) => {/* Implement theme change logic */}}
+                onFontSizeChange={(size) => {/* Implement font size change logic */}}
+            />
             <Select onValueChange={setOperation} defaultValue={operation}>
                 <SelectTrigger className="w-full mb-4">
                     <SelectValue placeholder={translations[language].selectOperation} />
