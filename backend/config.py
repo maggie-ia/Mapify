@@ -33,3 +33,7 @@ class Config:
 
     # Configuración de ipapi
     IPAPI_API_KEY = os.getenv("IPAPI_API_KEY")
+
+    # Configuración de Hugging Face
+    HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+    HUGGINGFACE_MODEL = os.getenv("HUGGINGFACE_MODEL") or "facebook/bart-large-cnn"

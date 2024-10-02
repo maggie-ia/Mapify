@@ -3,6 +3,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
 import { exportResult } from '../services/textProcessingService';
+import { canExport, incrementExportCount } from '../utils/membershipUtils';
+import { toast } from 'react-hot-toast';
 
 const ExportOptions = ({ result, operationType }) => {
   const { language } = useLanguage();
@@ -14,42 +16,50 @@ const ExportOptions = ({ result, operationType }) => {
       pdf: 'PDF',
       txt: 'TXT',
       docx: 'DOCX',
-      notAvailable: 'No disponible en tu plan actual'
+      notAvailable: 'No disponible en tu plan actual',
+      exportLimitReached: 'Has alcanzado el límite de exportaciones para tu plan'
     },
     en: {
       export: 'Export',
       pdf: 'PDF',
       txt: 'TXT',
       docx: 'DOCX',
-      notAvailable: 'Not available in your current plan'
+      notAvailable: 'Not available in your current plan',
+      exportLimitReached: 'You have reached the export limit for your plan'
     },
     fr: {
       export: 'Exporter',
       pdf: 'PDF',
       txt: 'TXT',
       docx: 'DOCX',
-      notAvailable: 'Non disponible dans votre forfait actuel'
+      notAvailable: 'Non disponible dans votre forfait actuel',
+      exportLimitReached: 'Vous avez atteint la limite d\'exportation pour votre forfait'
     }
   };
 
   const handleExport = async (format) => {
+    if (!canExport(format)) {
+      toast.error(translations[language].exportLimitReached);
+      return;
+    }
+
     try {
       const exportedResult = await exportResult(result, format);
+      incrementExportCount();
       // Handle the exported result (e.g., trigger download)
       console.log('Exported result:', exportedResult);
+      toast.success(translations[language].exportSuccess);
     } catch (error) {
       console.error('Error exporting result:', error);
+      toast.error(translations[language].exportError);
     }
   };
 
   const isExportAllowed = (format) => {
-    if (user.membership === 'premium') return true;
-    if (user.membership === 'basic') return true;
-    if (user.membership === 'free') {
-      // Verificar si el usuario aún tiene exportaciones disponibles
-      return user.exportsRemaining > 0;
+    if (format === 'txt' && operationType === 'conceptMap') {
+      return false;
     }
-    return false;
+    return canExport(format);
   };
 
   return (
@@ -60,14 +70,14 @@ const ExportOptions = ({ result, operationType }) => {
           <Button
             key={format}
             onClick={() => handleExport(format)}
-            disabled={!isExportAllowed(format) || (format === 'txt' && operationType === 'conceptMap')}
+            disabled={!isExportAllowed(format)}
             className="bg-tertiary text-white hover:bg-quaternary"
           >
             {translations[language][format]}
           </Button>
         ))}
       </div>
-      {user.membership === 'free' && user.exportsRemaining === 0 && (
+      {!isExportAllowed('pdf') && (
         <p className="text-sm text-red-500 mt-2">{translations[language].notAvailable}</p>
       )}
     </div>

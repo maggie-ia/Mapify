@@ -1,44 +1,40 @@
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import Header from "./components/Header";
-import Home from "./pages/Home";
-import OperationSelection from "./pages/OperationSelection";
-import Results from "./pages/Results";
-import Settings from "./pages/Settings";
-import MembershipSelection from "./pages/MembershipSelection";
-import Register from "./components/Register";
-import Login from "./components/Login";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
+import Header from './components/Header';
+import Home from './pages/Home';
+import OperationSelection from './components/OperationSelection';
+import Results from './pages/Results';
+import Settings from './pages/Settings';
+import WritingAssistant from './components/WritingAssistant';
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <div className="min-h-screen bg-secondary text-primary">
+        <LanguageProvider>
+          <Router>
+            <div className="min-h-screen bg-secondary">
               <Header />
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/operations" element={<OperationSelection />} />
+                <Route path="/operation-selection" element={<OperationSelection />} />
                 <Route path="/results" element={<Results />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/membership" element={<MembershipSelection />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/writing-assistant" element={<WritingAssistant />} />
               </Routes>
             </div>
-          </BrowserRouter>
-        </TooltipProvider>
+          </Router>
+          <Toaster />
+        </LanguageProvider>
       </AuthProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+}
 
 export default App;

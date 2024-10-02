@@ -4,7 +4,8 @@ from app.models.user import User
 from app.models.document import Document
 from app.services.text_processing import (
     summarize_text, paraphrase_text, synthesize_text,
-    generate_concept_map, extract_relevant_phrases, translate_text
+    generate_concept_map, extract_relevant_phrases, translate_text,
+    get_writing_assistance
 )
 from app.services.membership_service import (
     can_perform_operation, increment_operation, get_page_limit,
@@ -64,3 +65,23 @@ def process_text():
     increment_operation(user_id, operation)
 
     return jsonify({"result": result}), 200
+
+@text_processing.route('/writing-assistance', methods=['POST'])
+@jwt_required()
+def writing_assistance():
+    data = request.json
+    text = data.get('text')
+    membership_type = data.get('membershipType')
+    user_id = get_jwt_identity()
+
+    if not text or not membership_type:
+        return jsonify({"error": "Invalid request"}), 400
+
+    if not can_perform_operation(user_id, 'writingAssistant'):
+        return jsonify({"error": "Operation limit reached for your membership level"}), 403
+
+    suggestions = get_writing_assistance(text, membership_type)
+
+    increment_operation(user_id, 'writingAssistant')
+
+    return jsonify({"suggestions": suggestions}), 200

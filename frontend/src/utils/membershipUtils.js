@@ -6,30 +6,28 @@ const MEMBERSHIP_LIMITS = {
     maxPages: 5,
     allowedOperations: ['summarize', 'paraphrase', 'translate'],
     maxConceptMapNodes: 0,
-    allowedLanguages: ['en', 'es']
+    allowedLanguages: ['en', 'es'],
+    weeklyExports: 1
   },
   basic: {
     monthlyOperations: 10,
     maxPages: 10,
     allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'],
     maxConceptMapNodes: 6,
-    allowedLanguages: ['en', 'es', 'fr', 'de']
+    allowedLanguages: ['en', 'es', 'fr', 'de'],
+    monthlyExports: 10
   },
   premium: {
     monthlyOperations: Infinity,
     maxPages: Infinity,
     allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'],
     maxConceptMapNodes: Infinity,
-    allowedLanguages: 'all'
+    allowedLanguages: 'all',
+    monthlyExports: Infinity
   }
 };
 
-/**
- * Verifica los límites de membresía para una operación dada.
- * @param {string} operation - Tipo de operación a verificar.
- * @throws {Error} Si se exceden los límites de la membresía.
- */
-export const checkMembershipLimits = async (operation) => {
+export const checkMembershipLimits = async (operation, pageCount) => {
   const { user } = useAuth();
   const limits = MEMBERSHIP_LIMITS[user.membership];
 
@@ -37,47 +35,57 @@ export const checkMembershipLimits = async (operation) => {
     throw new Error(`Operation ${operation} not allowed for ${user.membership} membership`);
   }
 
+  if (pageCount > limits.maxPages) {
+    throw new Error(`Document exceeds the ${limits.maxPages} page limit for ${user.membership} membership`);
+  }
+
   // Aquí se deberían verificar los contadores de operaciones del usuario
   // Esta lógica dependerá de cómo se estén almacenando y actualizando estos contadores
   // Por ahora, asumiremos que están dentro de los límites
 };
 
-/**
- * Verifica si una operación está permitida para el tipo de membresía actual.
- * @param {string} operation - Tipo de operación a verificar.
- * @returns {boolean} - True si la operación está permitida, false en caso contrario.
- */
 export const isOperationAllowed = (operation) => {
   const { user } = useAuth();
   const limits = MEMBERSHIP_LIMITS[user.membership];
   return limits.allowedOperations.includes(operation);
 };
 
-/**
- * Obtiene el límite de páginas para la membresía actual.
- * @returns {number} - Límite de páginas.
- */
 export const getPageLimit = () => {
   const { user } = useAuth();
   return MEMBERSHIP_LIMITS[user.membership].maxPages;
 };
 
-/**
- * Verifica si se puede traducir a un idioma específico.
- * @param {string} language - Código del idioma a verificar.
- * @returns {boolean} - True si se puede traducir al idioma, false en caso contrario.
- */
 export const canTranslateToLanguage = (language) => {
   const { user } = useAuth();
   const allowedLanguages = MEMBERSHIP_LIMITS[user.membership].allowedLanguages;
   return allowedLanguages === 'all' || allowedLanguages.includes(language);
 };
 
-/**
- * Obtiene el límite de nodos para mapas conceptuales.
- * @returns {number} - Límite de nodos para mapas conceptuales.
- */
 export const getConceptMapNodeLimit = () => {
   const { user } = useAuth();
   return MEMBERSHIP_LIMITS[user.membership].maxConceptMapNodes;
+};
+
+export const canExport = (format) => {
+  const { user } = useAuth();
+  const limits = MEMBERSHIP_LIMITS[user.membership];
+  
+  // Verificar si el usuario aún tiene exportaciones disponibles
+  if (user.membership === 'free') {
+    return user.weeklyExports < limits.weeklyExports;
+  } else if (user.membership === 'basic') {
+    return user.monthlyExports < limits.monthlyExports;
+  }
+  
+  return true; // Para usuarios premium
+};
+
+export const incrementExportCount = () => {
+  const { user } = useAuth();
+  if (user.membership === 'free') {
+    user.weeklyExports += 1;
+  } else if (user.membership === 'basic') {
+    user.monthlyExports += 1;
+  }
+  // No es necesario incrementar para usuarios premium
 };

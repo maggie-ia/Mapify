@@ -8,3 +8,7 @@ class Document(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     file_type = db.Column(db.String(10))
+    embeddings = db.Column(db.PickleType)  # New field for storing embeddings
+
+    def __repr__(self):
+        return f'<Document {self.filename}>'

@@ -4,12 +4,15 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
 import { uploadFile } from '../services/fileService';
+import { getPageLimit } from '../utils/membershipUtils';
+import { toast } from 'react-hot-toast';
 
 const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const { language } = useLanguage();
+    const pageLimit = getPageLimit();
 
     const translations = {
         es: {
@@ -22,6 +25,7 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Tipo de archivo no válido. Por favor, seleccione un archivo PDF, TXT o DOCX.',
             uploadSuccess: 'Archivo subido con éxito',
             uploadError: 'Error al subir el archivo',
+            fileTooLarge: `El archivo excede el límite de ${pageLimit} páginas para tu membresía.`
         },
         en: {
             title: 'Upload File',
@@ -33,6 +37,7 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
             uploadSuccess: 'File uploaded successfully',
             uploadError: 'Error uploading file',
+            fileTooLarge: `File exceeds the ${pageLimit} page limit for your membership.`
         },
         fr: {
             title: 'Télécharger un fichier',
@@ -44,6 +49,7 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
             uploadSuccess: 'Fichier téléchargé avec succès',
             uploadError: 'Erreur lors du téléchargement du fichier',
+            fileTooLarge: `Le fichier dépasse la limite de ${pageLimit} pages pour votre adhésion.`
         }
     };
 
@@ -65,12 +71,19 @@ const FileUpload = ({ onFileUploaded }) => {
             setIsUploading(true);
             try {
                 const response = await uploadFile(file);
+                if (response.pageCount > pageLimit) {
+                    setError(translations[language].fileTooLarge);
+                    setIsUploading(false);
+                    return;
+                }
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
+                toast.success(translations[language].uploadSuccess);
             } catch (error) {
                 setError(translations[language].uploadError);
                 setIsUploading(false);
+                toast.error(translations[language].uploadError);
             }
         }
     };
