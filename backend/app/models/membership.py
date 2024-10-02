@@ -18,12 +18,12 @@ class Membership(db.Model):
 # Precios actualizados
 def update_prices():
     new_prices = [
-        ('basic', 'monthly', 6.99),
-        ('basic', 'sixMonths', 34.99),
-        ('basic', 'yearly', 59.99),
-        ('premium', 'monthly', 13.99),
-        ('premium', 'sixMonths', 69.99),
-        ('premium', 'yearly', 119.99)
+        ('basic', 'monthly', 4.99),
+        ('basic', 'sixMonths', 32.99),
+        ('basic', 'yearly', 57.99),
+        ('premium', 'monthly', 11.99),
+        ('premium', 'sixMonths', 67.99),
+        ('premium', 'yearly', 117.99)
     ]
     
     for name, duration, price in new_prices:
