@@ -8,6 +8,7 @@ from app import db
 from app.services.ai_service import (
     process_ai_response, generate_suggested_questions
 )
+from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
 
@@ -36,8 +37,8 @@ def send_chat_message(document_id):
     if user.membership_type != 'premium':
         return jsonify({"error": "Chat access is only available for premium users"}), 403
     
-    if not user.can_use_chat():
-        return jsonify({"error": "You have reached your chat usage limit for this period"}), 403
+    if not can_perform_operation(user_id, 'chat'):
+        return jsonify({"error": "You have reached your chat limit for this period"}), 403
     
     data = request.json
     message = data.get('message')
@@ -64,7 +65,7 @@ def send_chat_message(document_id):
         conversation.conversation_data.append(ai_message)
         db.session.commit()
         
-        user.increment_chat_usage()
+        increment_operation(user_id, 'chat')
         
         suggested_questions = generate_suggested_questions(document.content, ai_response)
         
