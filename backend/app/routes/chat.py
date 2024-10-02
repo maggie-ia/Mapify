@@ -4,7 +4,7 @@ from app.models.user import User
 from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
 from app import db
-from app.services.ai_service import process_ai_response
+from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map
 
 chat = Blueprint('chat', __name__)
 
@@ -33,7 +33,10 @@ def send_chat_message(document_id):
     if user.membership_type != 'premium':
         return jsonify({"error": "Chat access is only available for premium users"}), 403
     
-    message = request.json.get('message')
+    data = request.json
+    message = data.get('message')
+    operation = data.get('operation', 'chat')
+    
     if not message:
         return jsonify({"error": "No message provided"}), 400
     
@@ -46,11 +49,21 @@ def send_chat_message(document_id):
         conversation = ChatConversation(user_id=user_id, document_id=document_id, conversation_data=[])
         db.session.add(conversation)
     
-    user_message = {"sender": "user", "content": message}
+    user_message = {"sender": "user", "content": message, "operation": operation}
     conversation.conversation_data.append(user_message)
     
-    ai_response = process_ai_response(document.content, message)
-    ai_message = {"sender": "ai", "content": ai_response}
+    if operation == 'chat':
+        ai_response = process_ai_response(document.content, message)
+        ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
+    elif operation == 'relevantPhrases':
+        relevant_phrases = generate_relevant_phrases(document.content)
+        ai_message = {"sender": "ai", "content": relevant_phrases, "operation": operation}
+    elif operation == 'conceptMap':
+        concept_map = generate_concept_map(document.content)
+        ai_message = {"sender": "ai", "content": concept_map, "operation": operation}
+    else:
+        return jsonify({"error": "Invalid operation"}), 400
+    
     conversation.conversation_data.append(ai_message)
     
     db.session.commit()
