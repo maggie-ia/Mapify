@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
@@ -91,7 +91,7 @@ const AIChat = ({ documentId }) => {
         }
     };
 
-    const { data: chatData, isLoading, error } = useQuery({
+    const { data: chatData, isLoading, error, refetch } = useQuery({
         queryKey: ['chatConversation', documentId],
         queryFn: () => axios.get(`/api/chat/${documentId}`).then(res => res.data),
         enabled: user.membership_type === 'premium',
@@ -114,6 +114,7 @@ const AIChat = ({ documentId }) => {
             setMessages(prevMessages => [...prevMessages, data.data.userMessage, data.data.aiResponse]);
             setInputMessage('');
             setSuggestedQuestions(data.data.suggestedQuestions || []);
+            logChatInteraction(user.id, 'message_sent', { documentId, operation });
         },
         onError: (error) => {
             if (error.response && error.response.status === 403) {
@@ -122,31 +123,44 @@ const AIChat = ({ documentId }) => {
                 toast.error(translations[language].errorSending);
             }
             console.error('Error sending message:', error);
+            reportSuspiciousActivity(user.id, { action: 'message_send_error', error: error.message });
         }
     });
 
-    const handleSendMessage = debounce(() => {
+    const handleSendMessage = useCallback(debounce(() => {
         const sanitizedInput = validateInput(inputMessage.trim());
         if (sanitizedInput) {
-            logChatInteraction(user.id, 'send_message', { documentId, operation });
             const encryptedMessage = encryptSensitiveData(sanitizedInput);
             sendMessageMutation.mutate({ 
                 message: encryptedMessage, 
                 operation,
-                documentContext: chatData?.summary // Include document context
+                documentContext: chatData?.summary
             });
         } else {
             reportSuspiciousActivity(user.id, { action: 'invalid_input', input: inputMessage });
             toast.error('Invalid input detected. Please try again.');
         }
-    }, 300);
+    }, 300), [inputMessage, operation, chatData, user.id]);
 
-    const handleFeedback = (messageId, isPositive) => {
+    const handleFeedback = useCallback((messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
         axios.post('/api/chat/feedback', { messageId, isPositive })
-            .then(() => toast.success('Feedback enviado con éxito'))
-            .catch(() => toast.error('Error al enviar feedback'));
-    };
+            .then(() => {
+                toast.success('Feedback sent successfully');
+                logChatInteraction(user.id, 'feedback_sent', { messageId, isPositive });
+            })
+            .catch(() => toast.error('Error sending feedback'));
+    }, [user.id]);
+
+    const handleThemeChange = useCallback((theme) => {
+        // Implement theme change logic
+        console.log('Theme changed to:', theme);
+    }, []);
+
+    const handleFontSizeChange = useCallback((size) => {
+        // Implement font size change logic
+        console.log('Font size changed to:', size);
+    }, []);
 
     if (user.membership_type !== 'premium') {
         return <p className="text-quaternary">{translations[language].notAvailable}</p>;
@@ -161,8 +175,8 @@ const AIChat = ({ documentId }) => {
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
             <ChatPersonalization 
-                onThemeChange={(theme) => {/* Implement theme change logic */}}
-                onFontSizeChange={(size) => {/* Implement font size change logic */}}
+                onThemeChange={handleThemeChange}
+                onFontSizeChange={handleFontSizeChange}
             />
             <Select onValueChange={setOperation} defaultValue={operation}>
                 <SelectTrigger className="w-full mb-4">
