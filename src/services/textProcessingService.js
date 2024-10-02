@@ -15,6 +15,9 @@ export const processText = async ({ operation, text, targetLanguage, pageCount }
     });
     return { ...response.data, operationType: operation };
   } catch (error) {
+    if (error.message.includes('not allowed') || error.message.includes('exceeds')) {
+      throw error; // Re-throw membership-related errors
+    }
     return handleApiError(error, `Error processing text (${operation})`);
   }
 };
