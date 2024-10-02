@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
-import { exportResult } from '../services/exportService';
+import { exportResult } from '../services/textProcessingService';
 
 const ExportOptions = ({ result, operationType }) => {
   const { language } = useLanguage();
@@ -32,8 +32,14 @@ const ExportOptions = ({ result, operationType }) => {
     }
   };
 
-  const handleExport = (format) => {
-    exportResult(result, format);
+  const handleExport = async (format) => {
+    try {
+      const exportedResult = await exportResult(result, format);
+      // Handle the exported result (e.g., trigger download)
+      console.log('Exported result:', exportedResult);
+    } catch (error) {
+      console.error('Error exporting result:', error);
+    }
   };
 
   const isExportAllowed = (format) => {
@@ -54,7 +60,7 @@ const ExportOptions = ({ result, operationType }) => {
           <Button
             key={format}
             onClick={() => handleExport(format)}
-            disabled={!isExportAllowed(format)}
+            disabled={!isExportAllowed(format) || (format === 'txt' && operationType === 'conceptMap')}
             className="bg-tertiary text-white hover:bg-quaternary"
           >
             {translations[language][format]}

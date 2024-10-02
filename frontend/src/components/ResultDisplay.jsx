@@ -34,7 +34,7 @@ const ResultDisplay = ({ result, operationType }) => {
   const renderResult = () => {
     switch (operationType) {
       case 'conceptMap':
-        return <img src={result} alt="Concept Map" className="max-w-full h-auto" />;
+        return <img src={`data:image/png;base64,${result}`} alt="Concept Map" className="max-w-full h-auto" />;
       case 'relevantPhrases':
         return (
           <ul className="list-disc list-inside">

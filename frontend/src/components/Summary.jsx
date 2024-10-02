@@ -20,7 +20,7 @@ const Summary = ({ summary }) => {
     };
 
     return (
-        <div className="mt-10">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-2xl font-bold mb-4 text-primary">{translations[language].title}</h2>
             {summary ? (
                 <p className="text-quaternary">{summary}</p>

@@ -3,6 +3,10 @@ import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import ExportOptions from './ExportOptions';
 import { Button } from "./ui/button";
+import Summary from './Summary';
+import ConceptMap from './ConceptMap';
+import RelevantPhrases from './RelevantPhrases';
+import TranslatedText from './TranslatedText';
 
 const Results = () => {
     const location = useLocation();
@@ -32,16 +36,14 @@ const Results = () => {
         if (!result) return null;
 
         switch (operationType) {
+            case 'summarize':
+                return <Summary summary={result} />;
             case 'conceptMap':
-                return <img src={result} alt="Concept Map" className="max-w-full h-auto mx-auto" />;
+                return <ConceptMap conceptMapImage={result} />;
             case 'relevantPhrases':
-                return (
-                    <ul className="list-disc list-inside">
-                        {result.map((phrase, index) => (
-                            <li key={index} className="mb-2 text-quaternary">{phrase}</li>
-                        ))}
-                    </ul>
-                );
+                return <RelevantPhrases phrases={result} />;
+            case 'translate':
+                return <TranslatedText originalText={result.originalText} translatedText={result.translatedText} targetLanguage={result.targetLanguage} />;
             default:
                 return <p className="whitespace-pre-wrap text-quaternary">{result}</p>;
         }

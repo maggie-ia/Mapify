@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
+import { getLocalizationInfo, formatPrice } from '../services/localizationService';
 
-const MembershipSelection = () => {
+const MembershipSelection = ({ onSelect }) => {
     const { language } = useLanguage();
+    const [localizationInfo, setLocalizationInfo] = useState({ currency: 'USD', countryCode: 'US' });
+
+    useEffect(() => {
+        const fetchLocalizationInfo = async () => {
+            const info = await getLocalizationInfo();
+            setLocalizationInfo(info);
+        };
+        fetchLocalizationInfo();
+    }, []);
 
     const translations = {
         es: {
@@ -24,7 +34,9 @@ const MembershipSelection = () => {
                 description: 'Para usuarios avanzados',
                 features: ['Operaciones ilimitadas', 'Todos los idiomas disponibles', 'Sin límite de páginas', 'Mapas conceptuales avanzados']
             },
-            selectButton: 'Seleccionar'
+            selectButton: 'Seleccionar',
+            freeLabel: 'Gratis',
+            perMonth: '/mes'
         },
         en: {
             title: 'Select your plan',
@@ -43,7 +55,9 @@ const MembershipSelection = () => {
                 description: 'For advanced users',
                 features: ['Unlimited operations', 'All available languages', 'No page limit', 'Advanced concept maps']
             },
-            selectButton: 'Select'
+            selectButton: 'Select',
+            freeLabel: 'Free',
+            perMonth: '/month'
         },
         fr: {
             title: 'Choisissez votre plan',
@@ -62,8 +76,16 @@ const MembershipSelection = () => {
                 description: 'Pour les utilisateurs avancés',
                 features: ['Opérations illimitées', 'Toutes les langues disponibles', 'Sans limite de pages', 'Cartes conceptuelles avancées']
             },
-            selectButton: 'Sélectionner'
+            selectButton: 'Sélectionner',
+            freeLabel: 'Gratuit',
+            perMonth: '/mois'
         }
+    };
+
+    const memberships = {
+        free: { price: 0 },
+        basic: { price: 9.99 },
+        premium: { price: 19.99 }
     };
 
     const renderMembershipCard = (type) => (
@@ -78,9 +100,18 @@ const MembershipSelection = () => {
                         <li key={index} className="text-quaternary">{feature}</li>
                     ))}
                 </ul>
+                <p className="mt-4 text-2xl font-bold text-tertiary">
+                    {memberships[type].price === 0 
+                        ? translations[language].freeLabel 
+                        : `${formatPrice(memberships[type].price, localizationInfo.currency, localizationInfo.countryCode)}${translations[language].perMonth}`
+                    }
+                </p>
             </CardContent>
             <CardFooter>
-                <Button className="w-full bg-tertiary text-white hover:bg-quaternary transition-colors">
+                <Button 
+                    onClick={() => onSelect(type)} 
+                    className="w-full bg-tertiary text-white hover:bg-quaternary transition-colors"
+                >
                     {translations[language].selectButton}
                 </Button>
             </CardFooter>
