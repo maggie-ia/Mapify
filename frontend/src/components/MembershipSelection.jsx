@@ -101,14 +101,14 @@ const MembershipSelection = ({ onSelect }) => {
     const memberships = {
         free: { price: 0 },
         basic: { 
-            monthly: 9.99,
-            sixMonths: 54.99,
-            yearly: 99.99
+            monthly: 6.99,
+            sixMonths: 34.99,
+            yearly: 59.99
         },
         premium: { 
-            monthly: 19.99,
-            sixMonths: 109.99,
-            yearly: 199.99
+            monthly: 13.99,
+            sixMonths: 69.99,
+            yearly: 119.99
         }
     };
 
