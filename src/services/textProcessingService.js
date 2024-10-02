@@ -4,15 +4,6 @@ import { handleApiError } from '../utils/errorHandling';
 
 const API_URL = '/api';
 
-/**
- * Procesa el texto según la operación especificada.
- * @param {Object} params - Parámetros de la operación.
- * @param {string} params.operation - Tipo de operación a realizar.
- * @param {string} params.text - Texto a procesar.
- * @param {string} [params.targetLanguage] - Idioma objetivo para traducción.
- * @param {number} [params.pageCount] - Número estimado de páginas.
- * @returns {Promise<Object>} - Resultado del procesamiento.
- */
 export const processText = async ({ operation, text, targetLanguage, pageCount }) => {
   try {
     await checkMembershipLimits(operation, pageCount);
