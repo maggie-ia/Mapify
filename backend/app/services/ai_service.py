@@ -63,3 +63,18 @@ def generate_concept_map(document_content, max_nodes=10):
     img_str = base64.b64encode(img_buffer.getvalue()).decode()
     
     return img_str
+
+def answer_document_question(document_content, question):
+    """
+    Responde a una pregunta específica sobre el contenido del documento.
+    """
+    try:
+        # Limitamos el contexto a los primeros 512 tokens para evitar exceder los límites del modelo
+        context = ' '.join(document_content.split()[:512])
+        
+        result = qa_model(question=question, context=context)
+        
+        return result['answer']
+    except Exception as e:
+        print(f"Error answering document question: {str(e)}")
+        return "Lo siento, no pude encontrar una respuesta a tu pregunta en el documento. Por favor, intenta reformularla o sé más específico."

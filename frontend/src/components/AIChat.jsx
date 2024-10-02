@@ -27,7 +27,8 @@ const AIChat = ({ documentId }) => {
             selectOperation: "Selecciona una operación",
             chat: "Chat",
             relevantPhrases: "Frases Relevantes",
-            conceptMap: "Mapa Conceptual"
+            conceptMap: "Mapa Conceptual",
+            askDocument: "Preguntar sobre el documento"
         },
         en: {
             placeholder: "Type your question here...",
@@ -38,7 +39,8 @@ const AIChat = ({ documentId }) => {
             selectOperation: "Select an operation",
             chat: "Chat",
             relevantPhrases: "Relevant Phrases",
-            conceptMap: "Concept Map"
+            conceptMap: "Concept Map",
+            askDocument: "Ask about the document"
         },
         fr: {
             placeholder: "Écrivez votre question ici...",
@@ -49,7 +51,8 @@ const AIChat = ({ documentId }) => {
             selectOperation: "Sélectionnez une opération",
             chat: "Chat",
             relevantPhrases: "Phrases Pertinentes",
-            conceptMap: "Carte Conceptuelle"
+            conceptMap: "Carte Conceptuelle",
+            askDocument: "Poser une question sur le document"
         }
     };
 
@@ -96,6 +99,7 @@ const AIChat = ({ documentId }) => {
                     <SelectItem value="chat">{translations[language].chat}</SelectItem>
                     <SelectItem value="relevantPhrases">{translations[language].relevantPhrases}</SelectItem>
                     <SelectItem value="conceptMap">{translations[language].conceptMap}</SelectItem>
+                    <SelectItem value="askDocument">{translations[language].askDocument}</SelectItem>
                 </SelectContent>
             </Select>
             <ScrollArea className="h-80 mb-4">

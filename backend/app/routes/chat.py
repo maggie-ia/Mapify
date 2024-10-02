@@ -4,7 +4,7 @@ from app.models.user import User
 from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
 from app import db
-from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map
+from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map, answer_document_question
 
 chat = Blueprint('chat', __name__)
 
@@ -61,6 +61,9 @@ def send_chat_message(document_id):
     elif operation == 'conceptMap':
         concept_map = generate_concept_map(document.content)
         ai_message = {"sender": "ai", "content": concept_map, "operation": operation}
+    elif operation == 'askDocument':
+        answer = answer_document_question(document.content, message)
+        ai_message = {"sender": "ai", "content": answer, "operation": operation}
     else:
         return jsonify({"error": "Invalid operation"}), 400
     
