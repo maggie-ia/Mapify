@@ -6,18 +6,21 @@ const API_URL = '/api';
 
 /**
  * Procesa el texto según la operación especificada.
- * @param {string} operation - Tipo de operación a realizar.
- * @param {string} text - Texto a procesar.
- * @param {Object} additionalParams - Parámetros adicionales (ej. targetLanguage).
+ * @param {Object} params - Parámetros de la operación.
+ * @param {string} params.operation - Tipo de operación a realizar.
+ * @param {string} params.text - Texto a procesar.
+ * @param {string} [params.targetLanguage] - Idioma objetivo para traducción.
+ * @param {number} [params.pageCount] - Número estimado de páginas.
  * @returns {Promise<Object>} - Resultado del procesamiento.
  */
-export const processText = async ({ operation, text, ...additionalParams }) => {
+export const processText = async ({ operation, text, targetLanguage, pageCount }) => {
   try {
-    await checkMembershipLimits(operation);
+    await checkMembershipLimits(operation, pageCount);
     const response = await axios.post(`${API_URL}/process`, { 
       operation, 
       text, 
-      ...additionalParams
+      targetLanguage,
+      pageCount
     });
     return { ...response.data, operationType: operation };
   } catch (error) {
@@ -25,13 +28,13 @@ export const processText = async ({ operation, text, ...additionalParams }) => {
   }
 };
 
-export const summarizeText = async (text) => processText({ operation: 'summarize', text });
-export const paraphraseText = async (text) => processText({ operation: 'paraphrase', text });
-export const synthesizeText = async (text) => processText({ operation: 'synthesize', text });
-export const createConceptMap = async (text) => processText({ operation: 'conceptMap', text });
-export const extractRelevantPhrases = async (text) => processText({ operation: 'relevantPhrases', text });
-export const translateText = async (text, targetLanguage) => 
-  processText({ operation: 'translate', text, targetLanguage });
+export const summarizeText = async (text, pageCount) => processText({ operation: 'summarize', text, pageCount });
+export const paraphraseText = async (text, pageCount) => processText({ operation: 'paraphrase', text, pageCount });
+export const synthesizeText = async (text, pageCount) => processText({ operation: 'synthesize', text, pageCount });
+export const createConceptMap = async (text, pageCount) => processText({ operation: 'conceptMap', text, pageCount });
+export const extractRelevantPhrases = async (text, pageCount) => processText({ operation: 'relevantPhrases', text, pageCount });
+export const translateText = async (text, targetLanguage, pageCount) => 
+  processText({ operation: 'translate', text, targetLanguage, pageCount });
 
 export const exportResult = async (result, format) => {
   try {
