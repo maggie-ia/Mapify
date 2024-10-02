@@ -4,15 +4,16 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
 import { uploadFile } from '../services/fileService';
-import { getPageLimit } from '../utils/membershipUtils';
-import { toast } from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
+import FileSizeLimitInfo from './FileSizeLimitInfo';
 
 const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
+    const [warning, setWarning] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const { language } = useLanguage();
-    const pageLimit = getPageLimit();
+    const { user } = useAuth();
 
     const translations = {
         es: {
@@ -25,7 +26,8 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Tipo de archivo no válido. Por favor, seleccione un archivo PDF, TXT o DOCX.',
             uploadSuccess: 'Archivo subido con éxito',
             uploadError: 'Error al subir el archivo',
-            fileTooLarge: `El archivo excede el límite de ${pageLimit} páginas para tu membresía.`
+            fileSizeExceeded: 'El tamaño del archivo excede el límite permitido para su membresía.',
+            fileSizeWarning: 'El archivo está cerca del límite de tamaño permitido.',
         },
         en: {
             title: 'Upload File',
@@ -37,7 +39,8 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
             uploadSuccess: 'File uploaded successfully',
             uploadError: 'Error uploading file',
-            fileTooLarge: `File exceeds the ${pageLimit} page limit for your membership.`
+            fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
+            fileSizeWarning: 'The file is close to the allowed size limit.',
         },
         fr: {
             title: 'Télécharger un fichier',
@@ -49,20 +52,46 @@ const FileUpload = ({ onFileUploaded }) => {
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
             uploadSuccess: 'Fichier téléchargé avec succès',
             uploadError: 'Erreur lors du téléchargement du fichier',
-            fileTooLarge: `Le fichier dépasse la limite de ${pageLimit} pages pour votre adhésion.`
+            fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
+            fileSizeWarning: 'Le fichier est proche de la limite de taille autorisée.',
+        }
+    };
+
+    const getFileSizeLimit = (membershipType) => {
+        switch (membershipType) {
+            case 'premium':
+                return 50 * 1024 * 1024; // 50MB for premium
+            case 'basic':
+            case 'free':
+            default:
+                return 16 * 1024 * 1024; // 16MB for basic and free
         }
     };
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         const allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        const maxSize = getFileSizeLimit(user.membership_type);
         
         if (selectedFile && allowedTypes.includes(selectedFile.type)) {
-            setFile(selectedFile);
-            setError('');
+            if (selectedFile.size > maxSize) {
+                setError(translations[language].fileSizeExceeded);
+                setFile(null);
+                setWarning('');
+            } else {
+                setFile(selectedFile);
+                setError('');
+                // Set warning if file size is within 10% of the limit
+                if (selectedFile.size > maxSize * 0.9) {
+                    setWarning(translations[language].fileSizeWarning);
+                } else {
+                    setWarning('');
+                }
+            }
         } else {
             setFile(null);
             setError(translations[language].invalidFileType);
+            setWarning('');
         }
     };
 
@@ -71,19 +100,13 @@ const FileUpload = ({ onFileUploaded }) => {
             setIsUploading(true);
             try {
                 const response = await uploadFile(file);
-                if (response.pageCount > pageLimit) {
-                    setError(translations[language].fileTooLarge);
-                    setIsUploading(false);
-                    return;
-                }
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
-                toast.success(translations[language].uploadSuccess);
+                setWarning('');
             } catch (error) {
                 setError(translations[language].uploadError);
                 setIsUploading(false);
-                toast.error(translations[language].uploadError);
             }
         }
     };
@@ -98,6 +121,7 @@ const FileUpload = ({ onFileUploaded }) => {
                 className="mb-4"
             />
             {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
+            {warning && <Alert variant="warning" className="mb-4">{warning}</Alert>}
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}
@@ -113,6 +137,7 @@ const FileUpload = ({ onFileUploaded }) => {
             >
                 {isUploading ? translations[language].uploading : translations[language].upload}
             </Button>
+            <FileSizeLimitInfo />
         </div>
     );
 };
