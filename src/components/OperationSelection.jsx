@@ -1,22 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { useAuth } from '../hooks/useAuth';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { processText } from '../services/textProcessingService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const OperationSelection = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   const { data: membershipInfo, isLoading } = useQuery({
     queryKey: ['membershipInfo'],
     queryFn: async () => {
-      const response = await axios.get('/api/membership-info');
-      return response.data;
+      const response = await fetch('/api/membership-info');
+      return response.json();
     },
   });
 
@@ -31,7 +32,9 @@ const OperationSelection = () => {
         relevantPhrases: 'Frases Relevantes',
         translate: 'Traducir',
       },
+      upgradeMessage: 'Actualiza tu membresía para acceder a esta función',
       operationsLeft: 'Operaciones restantes: ',
+      selectLanguage: 'Seleccionar idioma para traducción',
     },
     en: {
       title: 'Select an operation',
@@ -43,7 +46,9 @@ const OperationSelection = () => {
         relevantPhrases: 'Relevant Phrases',
         translate: 'Translate',
       },
+      upgradeMessage: 'Upgrade your membership to access this feature',
       operationsLeft: 'Operations left: ',
+      selectLanguage: 'Select language for translation',
     },
     fr: {
       title: 'Sélectionnez une opération',
@@ -55,14 +60,16 @@ const OperationSelection = () => {
         relevantPhrases: 'Phrases Pertinentes',
         translate: 'Traduire',
       },
+      upgradeMessage: 'Mettez à niveau votre adhésion pour accéder à cette fonctionnalité',
       operationsLeft: 'Opérations restantes : ',
+      selectLanguage: 'Sélectionner la langue pour la traduction',
     },
   };
 
   const processTextMutation = useMutation({
-    mutationFn: ({ operation, text }) => processText(operation, text),
+    mutationFn: processText,
     onSuccess: (result) => {
-      navigate('/results', { state: { result } });
+      navigate('/results', { state: { result, operationType: result.operationType } });
     },
     onError: (error) => {
       console.error('Error processing text:', error);
@@ -72,7 +79,8 @@ const OperationSelection = () => {
 
   const handleOperationSelect = (operation) => {
     const text = localStorage.getItem('uploadedText');
-    processTextMutation.mutate({ operation, text });
+    const pageCount = text.split(/\r\n|\r|\n/).length / 25; // Estimación aproximada de páginas
+    processTextMutation.mutate({ operation, text, targetLanguage: selectedLanguage, pageCount });
   };
 
   const isOperationAllowed = (operation) => {
@@ -87,7 +95,9 @@ const OperationSelection = () => {
     return false;
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
@@ -99,7 +109,7 @@ const OperationSelection = () => {
            membershipInfo.weekly_operations_remaining}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         {Object.entries(translations[language].options).map(([key, value]) => (
           <Button
             key={key}
@@ -113,6 +123,24 @@ const OperationSelection = () => {
           </Button>
         ))}
       </div>
+      {isOperationAllowed('translate') && (
+        <div className="mt-4">
+          <label htmlFor="language-select" className="block mb-2 text-sm font-medium text-quaternary">
+            {translations[language].selectLanguage}
+          </label>
+          <Select onValueChange={setSelectedLanguage} defaultValue={selectedLanguage}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="es">Español</SelectItem>
+              <SelectItem value="fr">Français</SelectItem>
+              <SelectItem value="de">Deutsch</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 };
