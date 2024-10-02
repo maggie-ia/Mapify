@@ -24,9 +24,9 @@ def get_chat_conversation(document_id):
     conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
     
     if not conversation:
-        return jsonify({"messages": []}), 200
+        return jsonify({"messages": [], "tags": []}), 200
     
-    return jsonify({"messages": conversation.conversation_data}), 200
+    return jsonify({"messages": conversation.conversation_data, "tags": conversation.tags}), 200
 
 @chat.route('/<int:document_id>', methods=['POST'])
 @jwt_required()
@@ -53,7 +53,7 @@ def send_chat_message(document_id):
     
     conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
     if not conversation:
-        conversation = ChatConversation(user_id=user_id, document_id=document_id, conversation_data=[])
+        conversation = ChatConversation(user_id=user_id, document_id=document_id, conversation_data=[], tags=[])
         db.session.add(conversation)
     
     user_message = {"sender": "user", "content": message, "operation": operation}
@@ -99,3 +99,61 @@ def submit_feedback():
     # Por ahora, solo devolveremos un mensaje de éxito
     
     return jsonify({"message": "Feedback submitted successfully"}), 200
+
+@chat.route('/save', methods=['POST'])
+@jwt_required()
+def save_conversation():
+    user_id = get_jwt_identity()
+    data = request.json
+    document_id = data.get('documentId')
+    messages = data.get('messages')
+    tags = data.get('tags')
+    
+    if not document_id or not messages:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        conversation = ChatConversation(user_id=user_id, document_id=document_id)
+    
+    conversation.conversation_data = messages
+    conversation.tags = tags
+    db.session.add(conversation)
+    db.session.commit()
+    
+    return jsonify({"message": "Conversation saved successfully"}), 200
+
+@chat.route('/load/<int:document_id>', methods=['GET'])
+@jwt_required()
+def load_conversation(document_id):
+    user_id = get_jwt_identity()
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    return jsonify({
+        "messages": conversation.conversation_data,
+        "tags": conversation.tags
+    }), 200
+
+@chat.route('/tag', methods=['POST'])
+@jwt_required()
+def add_tag():
+    user_id = get_jwt_identity()
+    data = request.json
+    document_id = data.get('documentId')
+    new_tag = data.get('tag')
+    
+    if not document_id or not new_tag:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    if new_tag not in conversation.tags:
+        conversation.tags.append(new_tag)
+        db.session.commit()
+    
+    return jsonify({"message": "Tag added successfully"}), 200
