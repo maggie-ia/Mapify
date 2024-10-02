@@ -2,10 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api'; // Asume que el backend está corriendo en este puerto
 
-export const uploadFile = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
+export const uploadFile = async (formData) => {
     try {
         const response = await axios.post(`${API_URL}/upload`, formData, {
             headers: {

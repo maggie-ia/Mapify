@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -6,12 +6,15 @@ import { Alert } from "./ui/alert";
 import { uploadFile } from '../services/fileService';
 import { useAuth } from '../hooks/useAuth';
 import FileSizeLimitInfo from './FileSizeLimitInfo';
+import { createWorker } from 'tesseract.js';
+import { toast } from 'react-hot-toast';
 
 const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
     const [warning, setWarning] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [isProcessingOCR, setIsProcessingOCR] = useState(false);
     const { language } = useLanguage();
     const { user } = useAuth();
 
@@ -21,6 +24,7 @@ const FileUpload = ({ onFileUploaded }) => {
             selectFile: 'Seleccionar archivo',
             upload: 'Subir',
             uploading: 'Subiendo...',
+            processing: 'Procesando OCR...',
             fileSelected: 'Archivo seleccionado:',
             noFileSelected: 'Ningún archivo seleccionado',
             invalidFileType: 'Tipo de archivo no válido. Por favor, seleccione un archivo PDF, TXT o DOCX.',
@@ -28,12 +32,14 @@ const FileUpload = ({ onFileUploaded }) => {
             uploadError: 'Error al subir el archivo',
             fileSizeExceeded: 'El tamaño del archivo excede el límite permitido para su membresía.',
             fileSizeWarning: 'El archivo está cerca del límite de tamaño permitido.',
+            ocrError: 'Error al procesar el OCR del archivo',
         },
         en: {
             title: 'Upload File',
             selectFile: 'Select file',
             upload: 'Upload',
             uploading: 'Uploading...',
+            processing: 'Processing OCR...',
             fileSelected: 'File selected:',
             noFileSelected: 'No file selected',
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
@@ -41,12 +47,14 @@ const FileUpload = ({ onFileUploaded }) => {
             uploadError: 'Error uploading file',
             fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
             fileSizeWarning: 'The file is close to the allowed size limit.',
+            ocrError: 'Error processing OCR for the file',
         },
         fr: {
             title: 'Télécharger un fichier',
             selectFile: 'Sélectionner un fichier',
             upload: 'Télécharger',
             uploading: 'Téléchargement en cours...',
+            processing: 'Traitement OCR en cours...',
             fileSelected: 'Fichier sélectionné :',
             noFileSelected: 'Aucun fichier sélectionné',
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
@@ -54,6 +62,7 @@ const FileUpload = ({ onFileUploaded }) => {
             uploadError: 'Erreur lors du téléchargement du fichier',
             fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
             fileSizeWarning: 'Le fichier est proche de la limite de taille autorisée.',
+            ocrError: 'Erreur lors du traitement OCR du fichier',
         }
     };
 
@@ -95,18 +104,42 @@ const FileUpload = ({ onFileUploaded }) => {
         }
     };
 
+    const processOCR = useCallback(async (fileBuffer) => {
+        const worker = await createWorker('eng');
+        try {
+            const { data: { text } } = await worker.recognize(fileBuffer);
+            await worker.terminate();
+            return text;
+        } catch (error) {
+            console.error('OCR Error:', error);
+            throw new Error(translations[language].ocrError);
+        }
+    }, [language]);
+
     const handleUpload = async () => {
         if (file) {
             setIsUploading(true);
             try {
-                const response = await uploadFile(file);
+                const fileBuffer = await file.arrayBuffer();
+                setIsProcessingOCR(true);
+                const ocrText = await processOCR(fileBuffer);
+                setIsProcessingOCR(false);
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('ocrText', ocrText);
+
+                const response = await uploadFile(formData);
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
                 setWarning('');
+                toast.success(translations[language].uploadSuccess);
             } catch (error) {
-                setError(translations[language].uploadError);
+                setError(error.message || translations[language].uploadError);
                 setIsUploading(false);
+                setIsProcessingOCR(false);
+                toast.error(error.message || translations[language].uploadError);
             }
         }
     };
@@ -132,10 +165,12 @@ const FileUpload = ({ onFileUploaded }) => {
             )}
             <Button 
                 onClick={handleUpload} 
-                disabled={!file || isUploading}
+                disabled={!file || isUploading || isProcessingOCR}
                 className="w-full bg-tertiary hover:bg-quaternary text-white"
             >
-                {isUploading ? translations[language].uploading : translations[language].upload}
+                {isUploading ? translations[language].uploading : 
+                 isProcessingOCR ? translations[language].processing :
+                 translations[language].upload}
             </Button>
             <FileSizeLimitInfo />
         </div>
