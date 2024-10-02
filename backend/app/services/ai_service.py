@@ -1,9 +1,6 @@
 from transformers import pipeline
 import spacy
 import networkx as nx
-from transformers import pipeline
-import spacy
-import networkx as nx
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
@@ -48,13 +45,11 @@ def summarize_text(text, max_length=150, min_length=50):
 
 @lru_cache(maxsize=100)
 def paraphrase_text(text):
-    # For simplicity, we'll use the summarizer as a basic form of paraphrasing
     paraphrased = summarizer(text, max_length=len(text.split()), min_length=len(text.split())//2, do_sample=True)
     return paraphrased[0]['summary_text']
 
 @lru_cache(maxsize=100)
 def synthesize_text(text):
-    # Synthesis can be a combination of summarization and paraphrasing
     summary = summarize_text(text)
     return paraphrase_text(summary)
 
@@ -101,8 +96,6 @@ def translate_text(text, target_language):
 
 @lru_cache(maxsize=100)
 def generate_suggested_questions(document_content, previous_answer):
-    # This is a simple implementation. In a real-world scenario, you might want to use
-    # more sophisticated NLP techniques to generate relevant questions.
     doc = nlp(document_content)
     entities = list(doc.ents)
     questions = [

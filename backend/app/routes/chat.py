@@ -6,9 +6,7 @@ from app.models.chat_conversation import ChatConversation
 from app.models.conversation_category import ConversationCategory
 from app import db
 from app.services.ai_service import (
-    process_ai_response, generate_suggested_questions,
-    summarize_text, paraphrase_text, synthesize_text,
-    generate_concept_map, extract_relevant_phrases, translate_text
+    process_ai_response, generate_suggested_questions
 )
 from app.services.membership_service import can_perform_operation, increment_operation
 
@@ -62,27 +60,7 @@ def send_chat_message(document_id):
     conversation.conversation_data.append(user_message)
     
     try:
-        ai_response = None
-        if operation == 'chat':
-            ai_response = process_ai_response(document.content, message)
-        elif operation == 'summarize':
-            ai_response = summarize_text(document.content)
-        elif operation == 'paraphrase':
-            ai_response = paraphrase_text(message)
-        elif operation == 'synthesize':
-            ai_response = synthesize_text(document.content)
-        elif operation == 'conceptMap':
-            ai_response = generate_concept_map(document.content)
-        elif operation == 'relevantPhrases':
-            ai_response = extract_relevant_phrases(document.content)
-        elif operation == 'translate':
-            target_language = data.get('target_language')
-            if not target_language:
-                return jsonify({"error": "Target language is required for translation"}), 400
-            ai_response = translate_text(message, target_language)
-        else:
-            return jsonify({"error": "Invalid operation"}), 400
-        
+        ai_response = process_ai_response(document.content, message, operation, document.embeddings)
         ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
         conversation.conversation_data.append(ai_message)
         db.session.commit()
@@ -133,7 +111,7 @@ def submit_feedback():
     if message_id is None or is_positive is None:
         return jsonify({"error": "Invalid feedback data"}), 400
     
-    # Here you would implement logic to store the feedback
-    # For this example, we'll just return a success message
+    # Aquí implementarías la lógica para almacenar el feedback
+    # Por ahora, solo devolveremos un mensaje de éxito
     
     return jsonify({"message": "Feedback submitted successfully"}), 200
