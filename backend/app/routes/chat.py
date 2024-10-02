@@ -5,6 +5,7 @@ from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
 from app import db
 from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map, answer_document_question
+from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
 
@@ -33,6 +34,9 @@ def send_chat_message(document_id):
     if user.membership_type != 'premium':
         return jsonify({"error": "Chat access is only available for premium users"}), 403
     
+    if not can_perform_operation(user_id, 'chat'):
+        return jsonify({"error": "You have reached your chat limit for this period"}), 403
+    
     data = request.json
     message = data.get('message')
     operation = data.get('operation', 'chat')
@@ -52,23 +56,28 @@ def send_chat_message(document_id):
     user_message = {"sender": "user", "content": message, "operation": operation}
     conversation.conversation_data.append(user_message)
     
-    if operation == 'chat':
-        ai_response = process_ai_response(document.content, message)
-        ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
-    elif operation == 'relevantPhrases':
-        relevant_phrases = generate_relevant_phrases(document.content)
-        ai_message = {"sender": "ai", "content": relevant_phrases, "operation": operation}
-    elif operation == 'conceptMap':
-        concept_map = generate_concept_map(document.content)
-        ai_message = {"sender": "ai", "content": concept_map, "operation": operation}
-    elif operation == 'askDocument':
-        answer = answer_document_question(document.content, message)
-        ai_message = {"sender": "ai", "content": answer, "operation": operation}
-    else:
-        return jsonify({"error": "Invalid operation"}), 400
-    
-    conversation.conversation_data.append(ai_message)
-    
-    db.session.commit()
-    
-    return jsonify({"userMessage": user_message, "aiResponse": ai_message}), 200
+    try:
+        if operation == 'chat':
+            ai_response = process_ai_response(document.content, message)
+            ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
+        elif operation == 'relevantPhrases':
+            relevant_phrases = generate_relevant_phrases(document.content)
+            ai_message = {"sender": "ai", "content": relevant_phrases, "operation": operation}
+        elif operation == 'conceptMap':
+            concept_map = generate_concept_map(document.content)
+            ai_message = {"sender": "ai", "content": concept_map, "operation": operation}
+        elif operation == 'askDocument':
+            answer = answer_document_question(document.content, message)
+            ai_message = {"sender": "ai", "content": answer, "operation": operation}
+        else:
+            return jsonify({"error": "Invalid operation"}), 400
+        
+        conversation.conversation_data.append(ai_message)
+        db.session.commit()
+        
+        increment_operation(user_id, 'chat')
+        
+        return jsonify({"userMessage": user_message, "aiResponse": ai_message}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

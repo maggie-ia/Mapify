@@ -4,17 +4,20 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
+from functools import lru_cache
 
-# Inicializamos los modelos una sola vez para reutilizarlos
+# Initialize models once to reuse them
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 nlp = spacy.load("es_core_news_sm")
 
+@lru_cache(maxsize=100)
 def process_ai_response(document_content, user_question):
     """
-    Procesa la pregunta del usuario utilizando el modelo de IA y el contenido del documento.
+    Process the user's question using the AI model and document content.
+    This function is cached to improve performance for repeated questions.
     """
     try:
-        # Limitamos el contexto a los primeros 512 tokens para evitar exceder los límites del modelo
+        # Limit the context to the first 512 tokens to avoid exceeding model limits
         context = ' '.join(document_content.split()[:512])
         
         result = qa_model(question=user_question, context=context)
@@ -24,9 +27,11 @@ def process_ai_response(document_content, user_question):
         print(f"Error processing AI response: {str(e)}")
         return "Lo siento, no pude procesar tu pregunta. Por favor, intenta reformularla."
 
+@lru_cache(maxsize=50)
 def generate_relevant_phrases(document_content, num_phrases=5):
     """
-    Genera frases relevantes del documento utilizando spaCy.
+    Generate relevant phrases from the document using spaCy.
+    This function is cached to improve performance for repeated calls on the same document.
     """
     doc = nlp(document_content)
     phrases = []
@@ -39,7 +44,7 @@ def generate_relevant_phrases(document_content, num_phrases=5):
 
 def generate_concept_map(document_content, max_nodes=10):
     """
-    Genera un mapa conceptual del documento utilizando spaCy y NetworkX.
+    Generate a concept map from the document using spaCy and NetworkX.
     """
     doc = nlp(document_content)
     
@@ -64,12 +69,14 @@ def generate_concept_map(document_content, max_nodes=10):
     
     return img_str
 
+@lru_cache(maxsize=100)
 def answer_document_question(document_content, question):
     """
-    Responde a una pregunta específica sobre el contenido del documento.
+    Answer a specific question about the document content.
+    This function is cached to improve performance for repeated questions.
     """
     try:
-        # Limitamos el contexto a los primeros 512 tokens para evitar exceder los límites del modelo
+        # Limit the context to the first 512 tokens to avoid exceeding model limits
         context = ' '.join(document_content.split()[:512])
         
         result = qa_model(question=question, context=context)

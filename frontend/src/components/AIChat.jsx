@@ -9,6 +9,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import RelevantPhrases from './RelevantPhrases';
 import ConceptMap from './ConceptMap';
+import { toast } from 'react-hot-toast';
 
 const AIChat = ({ documentId }) => {
     const [messages, setMessages] = useState([]);
@@ -28,7 +29,9 @@ const AIChat = ({ documentId }) => {
             chat: "Chat",
             relevantPhrases: "Frases Relevantes",
             conceptMap: "Mapa Conceptual",
-            askDocument: "Preguntar sobre el documento"
+            askDocument: "Preguntar sobre el documento",
+            errorSending: "Error al enviar el mensaje",
+            errorOperation: "Error al realizar la operación"
         },
         en: {
             placeholder: "Type your question here...",
@@ -40,7 +43,9 @@ const AIChat = ({ documentId }) => {
             chat: "Chat",
             relevantPhrases: "Relevant Phrases",
             conceptMap: "Concept Map",
-            askDocument: "Ask about the document"
+            askDocument: "Ask about the document",
+            errorSending: "Error sending message",
+            errorOperation: "Error performing operation"
         },
         fr: {
             placeholder: "Écrivez votre question ici...",
@@ -52,7 +57,9 @@ const AIChat = ({ documentId }) => {
             chat: "Chat",
             relevantPhrases: "Phrases Pertinentes",
             conceptMap: "Carte Conceptuelle",
-            askDocument: "Poser une question sur le document"
+            askDocument: "Poser une question sur le document",
+            errorSending: "Erreur lors de l'envoi du message",
+            errorOperation: "Erreur lors de l'exécution de l'opération"
         }
     };
 
@@ -74,6 +81,10 @@ const AIChat = ({ documentId }) => {
             setMessages(prevMessages => [...prevMessages, data.data.userMessage, data.data.aiResponse]);
             setInputMessage('');
         },
+        onError: (error) => {
+            toast.error(translations[language].errorSending);
+            console.error('Error sending message:', error);
+        }
     });
 
     const handleSendMessage = () => {
@@ -87,7 +98,10 @@ const AIChat = ({ documentId }) => {
     }
 
     if (isLoading) return <p>{translations[language].loading}</p>;
-    if (error) return <p>{translations[language].error}</p>;
+    if (error) {
+        console.error('Error loading chat:', error);
+        return <p>{translations[language].error}</p>;
+    }
 
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
