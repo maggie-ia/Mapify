@@ -31,9 +31,12 @@ const AIChat = ({ documentId }) => {
             notAvailable: "El chat con IA solo está disponible para usuarios premium.",
             selectOperation: "Selecciona una operación",
             chat: "Chat",
+            summarize: "Resumir",
+            paraphrase: "Parafrasear",
+            synthesize: "Sintetizar",
             relevantPhrases: "Frases Relevantes",
             conceptMap: "Mapa Conceptual",
-            askDocument: "Preguntar sobre el documento",
+            translate: "Traducir",
             errorSending: "Error al enviar el mensaje",
             errorOperation: "Error al realizar la operación",
             feedbackPositive: "¿Fue útil esta respuesta?",
@@ -48,9 +51,12 @@ const AIChat = ({ documentId }) => {
             notAvailable: "AI chat is only available for premium users.",
             selectOperation: "Select an operation",
             chat: "Chat",
+            summarize: "Summarize",
+            paraphrase: "Paraphrase",
+            synthesize: "Synthesize",
             relevantPhrases: "Relevant Phrases",
             conceptMap: "Concept Map",
-            askDocument: "Ask about the document",
+            translate: "Translate",
             errorSending: "Error sending message",
             errorOperation: "Error performing operation",
             feedbackPositive: "Was this response helpful?",
@@ -65,9 +71,12 @@ const AIChat = ({ documentId }) => {
             notAvailable: "Le chat IA n'est disponible que pour les utilisateurs premium.",
             selectOperation: "Sélectionnez une opération",
             chat: "Chat",
+            summarize: "Résumer",
+            paraphrase: "Paraphraser",
+            synthesize: "Synthétiser",
             relevantPhrases: "Phrases Pertinentes",
             conceptMap: "Carte Conceptuelle",
-            askDocument: "Poser une question sur le document",
+            translate: "Traduire",
             errorSending: "Erreur lors de l'envoi du message",
             errorOperation: "Erreur lors de l'exécution de l'opération",
             feedbackPositive: "Cette réponse était-elle utile ?",
@@ -131,9 +140,12 @@ const AIChat = ({ documentId }) => {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="chat">{translations[language].chat}</SelectItem>
+                    <SelectItem value="summarize">{translations[language].summarize}</SelectItem>
+                    <SelectItem value="paraphrase">{translations[language].paraphrase}</SelectItem>
+                    <SelectItem value="synthesize">{translations[language].synthesize}</SelectItem>
                     <SelectItem value="relevantPhrases">{translations[language].relevantPhrases}</SelectItem>
                     <SelectItem value="conceptMap">{translations[language].conceptMap}</SelectItem>
-                    <SelectItem value="askDocument">{translations[language].askDocument}</SelectItem>
+                    <SelectItem value="translate">{translations[language].translate}</SelectItem>
                 </SelectContent>
             </Select>
             <ScrollArea className="h-80 mb-4">

@@ -5,7 +5,7 @@ from app.models.document import Document
 from app.models.chat_conversation import ChatConversation
 from app.models.conversation_category import ConversationCategory
 from app import db
-from app.services.ai_service import process_ai_response, generate_relevant_phrases, generate_concept_map, answer_document_question, generate_suggested_questions
+from app.services.ai_service import process_ai_response, generate_suggested_questions
 from app.services.membership_service import can_perform_operation, increment_operation
 
 chat = Blueprint('chat', __name__)
@@ -58,27 +58,15 @@ def send_chat_message(document_id):
     conversation.conversation_data.append(user_message)
     
     try:
-        if operation == 'chat':
-            ai_response = process_ai_response(document.content, message)
-            ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
-        elif operation == 'relevantPhrases':
-            relevant_phrases = generate_relevant_phrases(document.content)
-            ai_message = {"sender": "ai", "content": relevant_phrases, "operation": operation}
-        elif operation == 'conceptMap':
-            concept_map = generate_concept_map(document.content)
-            ai_message = {"sender": "ai", "content": concept_map, "operation": operation}
-        elif operation == 'askDocument':
-            answer = answer_document_question(document.content, message)
-            ai_message = {"sender": "ai", "content": answer, "operation": operation}
-        else:
-            return jsonify({"error": "Invalid operation"}), 400
+        ai_response = process_ai_response(document.content, message, operation)
+        ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
         
         conversation.conversation_data.append(ai_message)
         db.session.commit()
         
         increment_operation(user_id, 'chat')
         
-        suggested_questions = generate_suggested_questions(document.content, ai_message['content'])
+        suggested_questions = generate_suggested_questions(document.content, ai_response)
         
         return jsonify({
             "userMessage": user_message, 

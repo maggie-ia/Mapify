@@ -5,34 +5,63 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 from functools import lru_cache
+from deep_translator import GoogleTranslator
 
 # Initialize models once to reuse them
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 nlp = spacy.load("es_core_news_sm")
 
 @lru_cache(maxsize=100)
-def process_ai_response(document_content, user_question):
+def process_ai_response(document_content, user_question, operation):
     """
     Process the user's question using the AI model and document content.
     This function is cached to improve performance for repeated questions.
     """
     try:
-        # Limit the context to the first 512 tokens to avoid exceeding model limits
-        context = ' '.join(document_content.split()[:512])
-        
-        result = qa_model(question=user_question, context=context)
-        
-        return result['answer']
+        if operation == 'chat':
+            # Limit the context to the first 512 tokens to avoid exceeding model limits
+            context = ' '.join(document_content.split()[:512])
+            result = qa_model(question=user_question, context=context)
+            return result['answer']
+        elif operation == 'summarize':
+            return summarize_text(document_content)
+        elif operation == 'paraphrase':
+            return paraphrase_text(document_content)
+        elif operation == 'synthesize':
+            return synthesize_text(document_content)
+        elif operation == 'relevantPhrases':
+            return generate_relevant_phrases(document_content)
+        elif operation == 'conceptMap':
+            return generate_concept_map(document_content)
+        elif operation == 'translate':
+            target_language = user_question  # Assume the user_question contains the target language
+            return translate_text(document_content, target_language)
+        else:
+            return "Operación no soportada."
     except Exception as e:
         print(f"Error processing AI response: {str(e)}")
-        return "Lo siento, no pude procesar tu pregunta. Por favor, intenta reformularla."
+        return "Lo siento, no pude procesar tu solicitud. Por favor, intenta reformularla."
+
+@lru_cache(maxsize=100)
+def summarize_text(text, max_length=150, min_length=50):
+    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
+    return summary[0]['summary_text']
+
+@lru_cache(maxsize=100)
+def paraphrase_text(text):
+    # For simplicity, we'll use the summarizer as a basic form of paraphrasing
+    paraphrased = summarizer(text, max_length=len(text.split()), min_length=len(text.split())//2, do_sample=True)
+    return paraphrased[0]['summary_text']
+
+@lru_cache(maxsize=100)
+def synthesize_text(text):
+    # Synthesis can be a combination of summarization and paraphrasing
+    summary = summarize_text(text)
+    return paraphrase_text(summary)
 
 @lru_cache(maxsize=50)
 def generate_relevant_phrases(document_content, num_phrases=5):
-    """
-    Generate relevant phrases from the document using spaCy.
-    This function is cached to improve performance for repeated calls on the same document.
-    """
     doc = nlp(document_content)
     phrases = []
     for sent in doc.sents:
@@ -43,9 +72,6 @@ def generate_relevant_phrases(document_content, num_phrases=5):
     return phrases
 
 def generate_concept_map(document_content, max_nodes=10):
-    """
-    Generate a concept map from the document using spaCy and NetworkX.
-    """
     doc = nlp(document_content)
     
     G = nx.Graph()
@@ -70,18 +96,20 @@ def generate_concept_map(document_content, max_nodes=10):
     return img_str
 
 @lru_cache(maxsize=100)
-def answer_document_question(document_content, question):
-    """
-    Answer a specific question about the document content.
-    This function is cached to improve performance for repeated questions.
-    """
-    try:
-        # Limit the context to the first 512 tokens to avoid exceeding model limits
-        context = ' '.join(document_content.split()[:512])
-        
-        result = qa_model(question=question, context=context)
-        
-        return result['answer']
-    except Exception as e:
-        print(f"Error answering document question: {str(e)}")
-        return "Lo siento, no pude encontrar una respuesta a tu pregunta en el documento. Por favor, intenta reformularla o sé más específico."
+def translate_text(text, target_language):
+    translator = GoogleTranslator(source='auto', target=target_language)
+    translated_text = translator.translate(text)
+    return translated_text
+
+@lru_cache(maxsize=100)
+def generate_suggested_questions(document_content, previous_answer):
+    # This is a simple implementation. In a real-world scenario, you might want to use
+    # more sophisticated NLP techniques to generate relevant questions.
+    doc = nlp(document_content)
+    entities = list(doc.ents)
+    questions = [
+        f"¿Qué puedes decirme sobre {ent.text}?" for ent in entities[:3]
+    ]
+    questions.append("¿Puedes elaborar más sobre la respuesta anterior?")
+    questions.append("¿Hay algún aspecto importante que no hayamos cubierto?")
+    return questions
