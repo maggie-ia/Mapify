@@ -1,14 +1,40 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const RelevantPhrases = ({ phrases }) => {
+    const { language } = useLanguage();
+
+    const translations = {
+        es: {
+            title: 'Frases Relevantes',
+            noPhrases: 'No se encontraron frases relevantes.'
+        },
+        en: {
+            title: 'Relevant Phrases',
+            noPhrases: 'No relevant phrases found.'
+        },
+        fr: {
+            title: 'Phrases Pertinentes',
+            noPhrases: 'Aucune phrase pertinente trouvée.'
+        }
+    };
+
     return (
-        <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Relevant Phrases</h3>
-            <ul className="list-disc pl-5">
-                {phrases.map((phrase, index) => (
-                    <li key={index} className="mb-1">{phrase}</li>
-                ))}
-            </ul>
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4 text-primary">
+                {translations[language].title}
+            </h2>
+            {phrases && phrases.length > 0 ? (
+                <ol className="list-decimal list-inside">
+                    {phrases.map((phrase, index) => (
+                        <li key={index} className="mb-2 text-quaternary">
+                            <span className="font-semibold text-tertiary">{phrase}</span>
+                        </li>
+                    ))}
+                </ol>
+            ) : (
+                <p className="text-quaternary">{translations[language].noPhrases}</p>
+            )}
         </div>
     );
 };
