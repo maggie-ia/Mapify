@@ -29,7 +29,11 @@ const ConceptMap = ({ conceptMapImage }) => {
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-2xl font-bold mb-4 text-primary">{translations[language].title}</h2>
-            <img src={`data:image/png;base64,${conceptMapImage}`} alt="Concept Map" className="mx-auto object-cover max-w-full h-auto" />
+            <img 
+                src={`data:image/png;base64,${conceptMapImage}`} 
+                alt="Concept Map" 
+                className="mx-auto object-cover max-w-full h-auto"
+            />
         </div>
     );
 };

@@ -25,11 +25,13 @@ const RelevantPhrases = ({ phrases }) => {
                 {translations[language].title}
             </h2>
             {phrases && phrases.length > 0 ? (
-                <ul className="list-disc list-inside">
+                <ol className="list-decimal list-inside">
                     {phrases.map((phrase, index) => (
-                        <li key={index} className="mb-2 text-quaternary">{phrase}</li>
+                        <li key={index} className="mb-2 text-quaternary">
+                            <span className="font-semibold text-tertiary">{phrase}</span>
+                        </li>
                     ))}
-                </ul>
+                </ol>
             ) : (
                 <p className="text-quaternary">{translations[language].noPhrases}</p>
             )}
