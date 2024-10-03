@@ -3,10 +3,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from config import Config
+<<<<<<< HEAD
 import logging
 from logging.handlers import RotatingFileHandler
 from .config.logging_config import setup_logging
 import os
+=======
+from .config.logging_config import setup_logging
+import logging
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 
 db = SQLAlchemy()
 migrate = Migrate()

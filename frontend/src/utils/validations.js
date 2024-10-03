@@ -23,4 +23,10 @@ export const fileUploadSchema = Yup.object().shape({
             if (!value) return false;
             return value.size <= 10 * 1024 * 1024; // 10MB limit
         }),
+<<<<<<< HEAD
 });
+=======
+});
+
+// Add more validation schemas as needed for other forms in your application
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c

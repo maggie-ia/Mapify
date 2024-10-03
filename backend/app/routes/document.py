@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from flask import Blueprint, request, jsonify, send_file, current_app
+=======
+from flask import Blueprint, request, jsonify, send_file
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 from werkzeug.utils import secure_filename
 from app.models.document import Document
 from app.models.user import User
@@ -12,15 +16,22 @@ from app.services.text_processing import (
 )
 import os
 from io import BytesIO
+<<<<<<< HEAD
 import PyPDF2
 import docx
+=======
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 
-document_bp = Blueprint('document', __name__)
+document = Blueprint('document', __name__)
 
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+<<<<<<< HEAD
 @document_bp.route('/upload', methods=['POST'])
+=======
+@document.route('/upload', methods=['POST'])
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 @jwt_required()
 def upload_document():
     if 'file' not in request.files:
@@ -36,6 +47,7 @@ def upload_document():
         validate_file_size(file, MAX_FILE_SIZE)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+<<<<<<< HEAD
 
     user_id = get_jwt_identity()
     page_limit = get_page_limit(user_id)
@@ -108,20 +120,65 @@ def get_user_documents():
     user_id = get_jwt_identity()
     documents = Document.query.filter_by(user_id=user_id).all()
     return jsonify([{"id": doc.id, "filename": doc.filename, "created_at": doc.created_at} for doc in documents]), 20
+=======
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 
-@document_bp.route('/list', methods=['GET'])
+    user_id = get_jwt_identity()
+    page_limit = get_page_limit(user_id)
+    
+    # Aquí procesarías el archivo y contarías las páginas
+    page_count = count_pages(file)
+    
+    if page_count > page_limit:
+        return jsonify({"error": f"El documento excede el límite de {page_limit} páginas para su nivel de membresía"}), 403
+
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    document = Document(filename=filename, file_path=file_path, user_id=user_id, content=extract_text(file_path))
+    db.session.add(document)
+    db.session.commit()
+
+    return jsonify({"message": "Archivo subido exitosamente", "document_id": document.id}), 201
+
+def count_pages(file):
+    # Implementar la lógica de conteo de páginas aquí
+    # Esta es una función de marcador de posición
+    return 1  # Por demostración, siempre devuelve 1 página
+
+def extract_text(file_path):
+    # Implementar la lógica para extraer texto del archivo
+    # Esta es una función de marcador de posición
+    with open(file_path, 'r') as file:
+        return file.read()
+
+@document.route('/<int:document_id>', methods=['GET'])
 @jwt_required()
-def list_documents():
+def get_document(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"error": "Acceso no autorizado"}), 403
+    return jsonify({"id": document.id, "filename": document.filename, "created_at": document.created_at}), 200
+
+@document.route('/<int:document_id>', methods=['DELETE'])
+@jwt_required()
+def delete_document(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"error": "Acceso no autorizado"}), 403
+    db.session.delete(document)
+    db.session.commit()
+    return jsonify({"message": "Documento eliminado exitosamente"}), 200
+
+@document.route('/user', methods=['GET'])
+@jwt_required()
+def get_user_documents():
     user_id = get_jwt_identity()
     documents = Document.query.filter_by(user_id=user_id).all()
-    return jsonify([{
-        "id": doc.id,
-        "filename": doc.filename,
-        "created_at": doc.created_at,
-        "file_type": doc.file_type
-    } for doc in documents]), 200
+    return jsonify([{"id": doc.id, "filename": doc.filename, "created_at": doc.created_at} for doc in documents]), 200
 
-@document_bp.route('/<int:doc_id>/summarize', methods=['POST'])
+@document.route('/<int:doc_id>/summarize', methods=['POST'])
 @jwt_required()
 def summarize_document(doc_id):
     document = Document.query.get_or_404(doc_id)
@@ -131,7 +188,7 @@ def summarize_document(doc_id):
     summary = summarize_text(document.content)
     return jsonify({"summary": summary}), 200
 
-@document_bp.route('/<int:doc_id>/paraphrase', methods=['POST'])
+@document.route('/<int:doc_id>/paraphrase', methods=['POST'])
 @jwt_required()
 def paraphrase_document(doc_id):
     document = Document.query.get_or_404(doc_id)
@@ -141,7 +198,7 @@ def paraphrase_document(doc_id):
     paraphrased = paraphrase_text(document.content)
     return jsonify({"paraphrased": paraphrased}), 200
 
-@document_bp.route('/<int:doc_id>/synthesize', methods=['POST'])
+@document.route('/<int:doc_id>/synthesize', methods=['POST'])
 @jwt_required()
 def synthesize_document(doc_id):
     document = Document.query.get_or_404(doc_id)
@@ -151,7 +208,7 @@ def synthesize_document(doc_id):
     synthesis = synthesize_text(document.content)
     return jsonify({"synthesis": synthesis}), 200
 
-@document_bp.route('/<int:doc_id>/relevant_phrases', methods=['POST'])
+@document.route('/<int:doc_id>/relevant_phrases', methods=['POST'])
 @jwt_required()
 def extract_relevant_phrases_from_document(doc_id):
     document = Document.query.get_or_404(doc_id)
@@ -161,7 +218,7 @@ def extract_relevant_phrases_from_document(doc_id):
     relevant_phrases = extract_relevant_phrases(document.content)
     return jsonify({"relevant_phrases": relevant_phrases}), 200
 
-@document_bp.route('/<int:doc_id>/concept_map', methods=['POST'])
+@document.route('/<int:doc_id>/concept_map', methods=['POST'])
 @jwt_required()
 def create_concept_map(doc_id):
     document = Document.query.get_or_404(doc_id)
@@ -182,7 +239,7 @@ def create_concept_map(doc_id):
         download_name=f'concept_map_{doc_id}.png'
     )
 
-@document_bp.route('/<int:doc_id>/translate', methods=['POST'])
+@document.route('/<int:doc_id>/translate', methods=['POST'])
 @jwt_required()
 def translate_document(doc_id):
     document = Document.query.get_or_404(doc_id)

@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { toast } from 'react-hot-toast';
 
 const MEMBERSHIP_LIMITS = {
+<<<<<<< HEAD
   free: {
       weeklyOperations: 3,
       maxPages: 5,
@@ -30,6 +31,63 @@ const MEMBERSHIP_LIMITS = {
       monthlyExports: Infinity,
       problemSolvingLimit: Infinity
   }
+=======
+    free: {
+        weeklyOperations: 3,
+        maxPages: 5,
+        allowedOperations: ['summarize', 'paraphrase', 'translate', 'problemSolving'],
+        maxConceptMapNodes: 0,
+        allowedLanguages: ['en', 'es'],
+        weeklyExports: 1,
+        problemSolvingLimit: 5
+    },
+    basic: {
+        monthlyOperations: 10,
+        maxPages: 10,
+        allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate', 'problemSolving'],
+        maxConceptMapNodes: 6,
+        allowedLanguages: ['en', 'es', 'fr', 'de'],
+        monthlyExports: 10,
+        problemSolvingLimit: 20
+    },
+    premium: {
+        monthlyOperations: Infinity,
+        maxPages: Infinity,
+        allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate', 'problemSolving'],
+        maxConceptMapNodes: Infinity,
+        allowedLanguages: 'all',
+        monthlyExports: Infinity,
+        problemSolvingLimit: Infinity
+    }
+};
+
+const getErrorMessage = (errorType, language) => {
+  const translations = {
+    es: {
+      operationNotAllowed: 'Esta operación no está permitida para tu nivel de membresía.',
+      pageLimitExceeded: 'Has excedido el límite de páginas para tu membresía.',
+      operationLimitReached: 'Has alcanzado el límite de operaciones para este período.',
+      exportLimitReached: 'Has alcanzado el límite de exportaciones para este período.',
+      languageNotAllowed: 'Este idioma no está disponible para tu nivel de membresía.'
+    },
+    en: {
+      operationNotAllowed: 'This operation is not allowed for your membership level.',
+      pageLimitExceeded: 'You have exceeded the page limit for your membership.',
+      operationLimitReached: 'You have reached the operation limit for this period.',
+      exportLimitReached: 'You have reached the export limit for this period.',
+      languageNotAllowed: 'This language is not available for your membership level.'
+    },
+    fr: {
+      operationNotAllowed: 'Cette opération n\'est pas autorisée pour votre niveau d\'adhésion.',
+      pageLimitExceeded: 'Vous avez dépassé la limite de pages pour votre adhésion.',
+      operationLimitReached: 'Vous avez atteint la limite d\'opérations pour cette période.',
+      exportLimitReached: 'Vous avez atteint la limite d\'exportations pour cette période.',
+      languageNotAllowed: 'Cette langue n\'est pas disponible pour votre niveau d\'adhésion.'
+    }
+  };
+
+  return translations[language][errorType];
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 };
 
 const getErrorMessage = (errorType, language) => {
@@ -61,6 +119,7 @@ const getErrorMessage = (errorType, language) => {
 };
 
 export const checkMembershipLimits = async (operation, pageCount) => {
+<<<<<<< HEAD
   const { user } = useAuth();
   const { language } = useLanguage();
   const limits = MEMBERSHIP_LIMITS[user.membership];
@@ -90,55 +149,88 @@ export const checkMembershipLimits = async (operation, pageCount) => {
   // Premium users have no operation limits, so no check is needed
 
   return true;
-};
+=======
+    const { user } = useAuth();
+    const { language } = useLanguage();
+    const limits = MEMBERSHIP_LIMITS[user.membership];
 
-export const isOperationAllowed = (operation) => {
-  const { user } = useAuth();
-  const limits = MEMBERSHIP_LIMITS[user.membership];
-  return limits.allowedOperations.includes(operation);
-};
+    if (!limits.allowedOperations.includes(operation)) {
+        toast.error(getErrorMessage('operationNotAllowed', language));
+        return false;
+    }
 
-export const getPageLimit = () => {
-  const { user } = useAuth();
-  return MEMBERSHIP_LIMITS[user.membership].maxPages;
-};
+    if (pageCount > limits.maxPages) {
+        toast.error(getErrorMessage('pageLimitExceeded', language));
+        return false;
+    }
 
-export const canTranslateToLanguage = (language) => {
-  const { user } = useAuth();
-  const allowedLanguages = MEMBERSHIP_LIMITS[user.membership].allowedLanguages;
-  return allowedLanguages === 'all' || allowedLanguages.includes(language);
-};
+    // Check operation counters
+    if (user.membership === 'free') {
+        if (user.weeklyOperations >= limits.weeklyOperations) {
+            toast.error(getErrorMessage('operationLimitReached', language));
+            return false;
+        }
+    } else if (user.membership === 'basic') {
+        if (user.monthlyOperations >= limits.monthlyOperations) {
+            toast.error(getErrorMessage('operationLimitReached', language));
+            return false;
+        }
+    }
+    // Premium users have no operation limits, so no check is needed
 
-export const getConceptMapNodeLimit = () => {
-  const { user } = useAuth();
-  return MEMBERSHIP_LIMITS[user.membership].maxConceptMapNodes;
+    return true;
 };
 
 export const getProblemSolvingLimit = () => {
-  const { user } = useAuth();
-  return MEMBERSHIP_LIMITS[user.membership].problemSolvingLimit;
+    const { user } = useAuth();
+    return MEMBERSHIP_LIMITS[user.membership].problemSolvingLimit;
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 };
 
-export const canExport = (format) => {
-  const { user } = useAuth();
-  const limits = MEMBERSHIP_LIMITS[user.membership];
-  
-  // Verificar si el usuario aún tiene exportaciones disponibles
-  if (user.membership === 'free') {
-    return user.weeklyExports < limits.weeklyExports;
-  } else if (user.membership === 'basic') {
-    return user.monthlyExports < limits.monthlyExports;
-  }
-  
-  return true; // Para usuarios premium
+export const isOperationAllowed = (operation) => {
+    const { user } = useAuth();
+    const limits = MEMBERSHIP_LIMITS[user.membership];
+    return limits.allowedOperations.includes(operation);
+};
+
+export const getPageLimit = () => {
+    const { user } = useAuth();
+    return MEMBERSHIP_LIMITS[user.membership].maxPages;
+};
+
+export const canTranslateToLanguage = (language) => {
+    const { user } = useAuth();
+    const allowedLanguages = MEMBERSHIP_LIMITS[user.membership].allowedLanguages;
+    return allowedLanguages === 'all' || allowedLanguages.includes(language);
+};
+
+export const getConceptMapNodeLimit = () => {
+    const { user } = useAuth();
+    return MEMBERSHIP_LIMITS[user.membership].maxConceptMapNodes;
+};
+
+export const canExport = () => {
+    const { user } = useAuth();
+    const { language } = useLanguage();
+    const limits = MEMBERSHIP_LIMITS[user.membership];
+    
+    if (user.membership === 'free' && user.weeklyExports >= limits.weeklyExports) {
+        toast.error(getErrorMessage('exportLimitReached', language));
+        return false;
+    } else if (user.membership === 'basic' && user.monthlyExports >= limits.monthlyExports) {
+        toast.error(getErrorMessage('exportLimitReached', language));
+        return false;
+    }
+    
+    return true;
 };
 
 export const incrementExportCount = () => {
-  const { user } = useAuth();
-  if (user.membership === 'free') {
-    user.weeklyExports += 1;
-  } else if (user.membership === 'basic') {
-    user.monthlyExports += 1;
-  }
-  // No es necesario incrementar para usuarios premium
+    const { user } = useAuth();
+    if (user.membership === 'free') {
+        user.weeklyExports += 1;
+    } else if (user.membership === 'basic') {
+        user.monthlyExports += 1;
+    }
+    // No es necesario incrementar para usuarios premium
 };

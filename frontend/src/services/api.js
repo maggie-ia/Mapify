@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+<<<<<<< HEAD
+=======
+import { useLanguage } from '../contexts/LanguageContext';
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -57,6 +61,7 @@ const getErrorMessage = (error, language) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+<<<<<<< HEAD
         if (error.response) {
             switch (error.response.status) {
                 case 400:
@@ -83,6 +88,11 @@ api.interceptors.response.use(
         } else {
             toast.error('An unexpected error occurred. Please try again.');
         }
+=======
+        const { language } = useLanguage();
+        const errorMessage = getErrorMessage(error, language);
+        toast.error(errorMessage);
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
         return Promise.reject(error);
     }
 );

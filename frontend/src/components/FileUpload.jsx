@@ -36,47 +36,49 @@ const FileUpload = ({ onFileUploaded }) => {
             selectFile: 'Select file',
             upload: 'Upload',
             uploading: 'Uploading...',
-            processing: 'Processing OCR...',
             fileSelected: 'File selected:',
             noFileSelected: 'No file selected',
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
+            fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
             uploadSuccess: 'File uploaded successfully',
             uploadError: 'Error uploading file',
-            fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
-            fileSizeWarning: 'The file is close to the allowed size limit.',
-            ocrError: 'Error processing OCR for the file',
         },
         fr: {
             title: 'Télécharger un fichier',
             selectFile: 'Sélectionner un fichier',
             upload: 'Télécharger',
             uploading: 'Téléchargement en cours...',
-            processing: 'Traitement OCR en cours...',
             fileSelected: 'Fichier sélectionné :',
             noFileSelected: 'Aucun fichier sélectionné',
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
+            fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
             uploadSuccess: 'Fichier téléchargé avec succès',
             uploadError: 'Erreur lors du téléchargement du fichier',
-            fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
-            fileSizeWarning: 'Le fichier est proche de la limite de taille autorisée.',
-            ocrError: 'Erreur lors du traitement OCR du fichier',
         }
     };
 
     useEffect(() => {
         validateFile();
     }, [file]);
+<<<<<<< HEAD
     
     const validateFile = async () => {
         if (!file) {
             setIsValid(false);
             setError('');
+=======
+
+    const validateFile = async () => {
+        if (!file) {
+            setIsValid(false);
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
             return;
         }
 
         try {
             await fileUploadSchema.validate({ file });
             setIsValid(true);
+<<<<<<< HEAD
             setError('');
         } catch (err) {
             setIsValid(false);
@@ -92,36 +94,21 @@ const FileUpload = ({ onFileUploaded }) => {
             case 'free':
             default:
                 return 16 * 1024 * 1024; // 16MB for basic and free
+=======
+        } catch (err) {
+            setIsValid(false);
+            addNotification('error', err.message);
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
         }
     };
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
-        const allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
-        const maxSize = getFileSizeLimit(user.membership_type);
-        
-        if (selectedFile && allowedTypes.includes(selectedFile.type)) {
-            if (selectedFile.size > maxSize) {
-                setError(translations[language].fileSizeExceeded);
-                setFile(null);
-                setWarning('');
-            } else {
-                setFile(selectedFile);
-                setError('');
-                if (selectedFile.size > maxSize * 0.9) {
-                    setWarning(translations[language].fileSizeWarning);
-                } else {
-                    setWarning('');
-                }
-            }
-        } else {
-            setFile(null);
-            setError(translations[language].invalidFileType);
-            setWarning('');
-        }
+        setFile(selectedFile);
     };
 
     const handleUpload = async () => {
+<<<<<<< HEAD
         if (file) {
             setIsUploading(true);
             setProgress(0);
@@ -138,6 +125,23 @@ const FileUpload = ({ onFileUploaded }) => {
                 setIsUploading(false);
                 toast.error(error.message || translations[language].uploadError);
             }
+=======
+        if (!isValid) return;
+
+        setIsUploading(true);
+        setProgress(0);
+        try {
+            const response = await uploadFile(file, (progress) => {
+                setProgress(progress);
+            });
+            onFileUploaded(response);
+            setIsUploading(false);
+            setFile(null);
+            addNotification('success', translations[language].uploadSuccess);
+        } catch (error) {
+            setIsUploading(false);
+            addNotification('error', error.message || translations[language].uploadError);
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
         }
     };
 
@@ -152,7 +156,10 @@ const FileUpload = ({ onFileUploaded }) => {
                 accept=".pdf,.txt,.docx"
                 className="mb-4"
             />
+<<<<<<< HEAD
             {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
+=======
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}

@@ -22,6 +22,7 @@ class User(db.Model):
     chat_usage_count = db.Column(db.Integer, default=0)
     chat_usage_reset = db.Column(db.DateTime, default=datetime.utcnow)
 
+<<<<<<< HEAD
     def get_max_file_size(self):
         if self.membership_type == 'premium':
             return 50 * 1024 * 1024  # 50 MB
@@ -149,6 +150,8 @@ class User(db.Model):
         else:  # free
             return 5
 
+=======
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
     def can_translate_to_language(self, language):
         if self.is_trial or self.membership_type == 'premium':
             return True
@@ -157,6 +160,7 @@ class User(db.Model):
             return language in allowed_languages
         else:  # free
             return language in ['en', 'es']
+<<<<<<< HEAD
     
     def log_error(self, error_message):
         logger = logging.getLogger('mapify_error_logger')
@@ -216,3 +220,9 @@ class User(db.Model):
             return max(0, 50 - self.chat_usage_count)
         else:  # free
             return max(0, 10 - self.chat_usage_count)
+=======
+
+    def log_error(self, error_message):
+        logger = logging.getLogger('mapify_error_logger')
+        logger.error(f"User {self.id} - {error_message}")
+>>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
