@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.membership import Membership
+from app.models.usage_history import UsageHistory  # Añadimos esta línea
 from app import db
 from datetime import datetime, timedelta
 from app.utils.exceptions import MembershipError
