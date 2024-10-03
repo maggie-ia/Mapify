@@ -1,52 +1,76 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.models.user import User
-from app import db
-from datetime import timedelta
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.services.auth_service import (
+    authenticate_user, register_user, verify_email, enable_two_factor,
+    verify_two_factor, reset_password, change_password, logout_all_devices
+)
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({"message": "Email already registered"}), 400
-    user = User(username=data['username'], email=data['email'])
-    user.set_password(data['password'])
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"message": "User registered successfully"}), 201
+    try:
+        user = register_user(data['username'], data['email'], data['password'])
+        return jsonify({"message": "Usuario registrado exitosamente. Por favor, verifica tu correo electrónico."}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(email=data['email']).first()
-    if user and user.check_password(data['password']):
-        access_token = create_access_token(identity=user.id, expires_delta=timedelta(days=1))
-        return jsonify(access_token=access_token), 200
-    return jsonify({"message": "Invalid credentials"}), 401
+    try:
+        result = authenticate_user(data['email'], data['password'])
+        if 'requires_2fa' in result:
+            return jsonify({"message": "Se requiere autenticación de dos factores", "user_id": result['user_id']}), 200
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
-@auth_bp.route('/user', methods=['GET'])
-@jwt_required()
-def get_user():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
-    return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "membership_type": user.membership_type
-    }), 200
-
-@auth_bp.route('/upgrade', methods=['POST'])
-@jwt_required()
-def upgrade_membership():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+@auth_bp.route('/verify-email', methods=['POST'])
+def verify_email_route():
     data = request.get_json()
-    new_membership = data.get('membership_type')
-    if new_membership in ['basic', 'premium']:
-        user.membership_type = new_membership
-        db.session.commit()
-        return jsonify({"message": f"Membership upgraded to {new_membership}"}), 200
-    return jsonify({"message": "Invalid membership type"}), 400
+    if verify_email(data['user_id'], data['token']):
+        return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
+    return jsonify({"error": "Token de verificación inválido"}), 400
+
+@auth_bp.route('/enable-2fa', methods=['POST'])
+@jwt_required()
+def enable_2fa():
+    user_id = get_jwt_identity()
+    secret = enable_two_factor(user_id)
+    if secret:
+        return jsonify({"secret": secret}), 200
+    return jsonify({"error": "No se pudo habilitar 2FA"}), 400
+
+@auth_bp.route('/verify-2fa', methods=['POST'])
+def verify_2fa():
+    data = request.get_json()
+    try:
+        result = verify_two_factor(data['user_id'], data['token'])
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password_route():
+    data = request.get_json()
+    if reset_password(data['email']):
+        return jsonify({"message": "Se ha enviado un correo con instrucciones para restablecer la contraseña"}), 200
+    return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
+
+@auth_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password_route():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    if change_password(user_id, data['old_password'], data['new_password']):
+        return jsonify({"message": "Contraseña cambiada exitosamente"}), 200
+    return jsonify({"error": "No se pudo cambiar la contraseña"}), 400
+
+@auth_bp.route('/logout-all', methods=['POST'])
+@jwt_required()
+def logout_all():
+    user_id = get_jwt_identity()
+    logout_all_devices(user_id)
+    return jsonify({"message": "Se ha cerrado sesión en todos los dispositivos"}), 200
