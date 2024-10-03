@@ -6,9 +6,7 @@ from app.models.chat_conversation import ChatConversation
 from app.models.conversation_category import ConversationCategory
 from app import db
 from app.services.ai_service import (
-    process_ai_response, generate_suggested_questions,
-    summarize_text, paraphrase_text, synthesize_text,
-    generate_concept_map, extract_relevant_phrases, translate_text
+    process_ai_response, generate_suggested_questions
 )
 from app.services.membership_service import can_perform_operation, increment_operation
 
@@ -26,9 +24,9 @@ def get_chat_conversation(document_id):
     conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
     
     if not conversation:
-        return jsonify({"messages": []}), 200
+        return jsonify({"messages": [], "tags": []}), 200
     
-    return jsonify({"messages": conversation.conversation_data}), 200
+    return jsonify({"messages": conversation.conversation_data, "tags": conversation.tags}), 200
 
 @chat.route('/<int:document_id>', methods=['POST'])
 @jwt_required()
@@ -55,34 +53,14 @@ def send_chat_message(document_id):
     
     conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
     if not conversation:
-        conversation = ChatConversation(user_id=user_id, document_id=document_id, conversation_data=[])
+        conversation = ChatConversation(user_id=user_id, document_id=document_id, conversation_data=[], tags=[])
         db.session.add(conversation)
     
     user_message = {"sender": "user", "content": message, "operation": operation}
     conversation.conversation_data.append(user_message)
     
     try:
-        ai_response = None
-        if operation == 'chat':
-            ai_response = process_ai_response(document.content, message)
-        elif operation == 'summarize':
-            ai_response = summarize_text(document.content)
-        elif operation == 'paraphrase':
-            ai_response = paraphrase_text(message)
-        elif operation == 'synthesize':
-            ai_response = synthesize_text(document.content)
-        elif operation == 'conceptMap':
-            ai_response = generate_concept_map(document.content)
-        elif operation == 'relevantPhrases':
-            ai_response = extract_relevant_phrases(document.content)
-        elif operation == 'translate':
-            target_language = data.get('target_language')
-            if not target_language:
-                return jsonify({"error": "Target language is required for translation"}), 400
-            ai_response = translate_text(message, target_language)
-        else:
-            return jsonify({"error": "Invalid operation"}), 400
-        
+        ai_response = process_ai_response(document.content, message, operation, document.embeddings)
         ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
         conversation.conversation_data.append(ai_message)
         db.session.commit()
@@ -99,22 +77,6 @@ def send_chat_message(document_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
-@chat.route('/save', methods=['POST'])
-@jwt_required()
-def save_conversation():
-    user_id = get_jwt_identity()
-    data = request.json
-    messages = data.get('messages')
-    
-    if not messages:
-        return jsonify({"error": "No messages provided"}), 400
-    
-    conversation = ChatConversation(user_id=user_id, conversation_data=messages)
-    db.session.add(conversation)
-    db.session.commit()
-    
-    return jsonify({"message": "Conversation saved successfully"}), 200
 
 @chat.route('/categories', methods=['GET'])
 @jwt_required()
@@ -133,7 +95,65 @@ def submit_feedback():
     if message_id is None or is_positive is None:
         return jsonify({"error": "Invalid feedback data"}), 400
     
-    # Here you would implement logic to store the feedback
-    # For this example, we'll just return a success message
+    # Aquí implementarías la lógica para almacenar el feedback
+    # Por ahora, solo devolveremos un mensaje de éxito
     
     return jsonify({"message": "Feedback submitted successfully"}), 200
+
+@chat.route('/save', methods=['POST'])
+@jwt_required()
+def save_conversation():
+    user_id = get_jwt_identity()
+    data = request.json
+    document_id = data.get('documentId')
+    messages = data.get('messages')
+    tags = data.get('tags')
+    
+    if not document_id or not messages:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        conversation = ChatConversation(user_id=user_id, document_id=document_id)
+    
+    conversation.conversation_data = messages
+    conversation.tags = tags
+    db.session.add(conversation)
+    db.session.commit()
+    
+    return jsonify({"message": "Conversation saved successfully"}), 200
+
+@chat.route('/load/<int:document_id>', methods=['GET'])
+@jwt_required()
+def load_conversation(document_id):
+    user_id = get_jwt_identity()
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    return jsonify({
+        "messages": conversation.conversation_data,
+        "tags": conversation.tags
+    }), 200
+
+@chat.route('/tag', methods=['POST'])
+@jwt_required()
+def add_tag():
+    user_id = get_jwt_identity()
+    data = request.json
+    document_id = data.get('documentId')
+    new_tag = data.get('tag')
+    
+    if not document_id or not new_tag:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    conversation = ChatConversation.query.filter_by(user_id=user_id, document_id=document_id).first()
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    if new_tag not in conversation.tags:
+        conversation.tags.append(new_tag)
+        db.session.commit()
+    
+    return jsonify({"message": "Tag added successfully"}), 200

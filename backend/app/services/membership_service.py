@@ -1,35 +1,46 @@
 from app.models.user import User
-from app.models.usage_history import UsageHistory
 from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
+
+def can_perform_operation(user_id, operation_type):
+    user = User.query.get(user_id)
+    if user.membership_type == 'premium':
+        return True
+    elif user.membership_type == 'basic':
+        if operation_type == 'chat':
+            return user.chat_usage_count < 50  # 50 usos por mes para básico
+    else:  # free
+        if operation_type == 'chat':
+            return user.chat_usage_count < 10  # 10 usos por mes para gratuito
+    return False
+
+def increment_operation(user_id, operation_type):
+    user = User.query.get(user_id)
+    if operation_type == 'chat':
+        user.chat_usage_count += 1
+        if user.chat_usage_reset is None or datetime.utcnow() - user.chat_usage_reset > timedelta(days=30):
+            user.chat_usage_count = 1
+            user.chat_usage_reset = datetime.utcnow()
+    db.session.commit()
 
 def get_membership_info(user_id):
     user = User.query.get(user_id)
     membership_info = user.get_membership_info()
     membership_info['current_price'] = user.membership_price
-    membership_info['current_market_price'] = Membership.get_price(user.membership_type)
+    membership_info['current_market_price'] = Membership.get_price(user.membership_type, user.membership_duration)
     return membership_info
 
-def update_membership(user_id, new_membership_type):
+def update_membership(user_id, new_membership_type, new_duration):
     user = User.query.get(user_id)
-    current_price = Membership.get_price(new_membership_type)
-    user.update_membership(new_membership_type, current_price)
+    current_price = Membership.get_price(new_membership_type, new_duration)
+    user.update_membership(new_membership_type, new_duration, current_price)
     updated_info = user.get_membership_info()
     return updated_info
-
-def can_perform_operation(user_id):
-    user = User.query.get(user_id)
-    return user.can_perform_operation()
 
 def can_export(user_id):
     user = User.query.get(user_id)
     return user.can_export()
-
-def increment_operation(user_id, operation_type):
-    user = User.query.get(user_id)
-    user.increment_operation()
-    add_usage_history(user_id, operation_type)
 
 def increment_export(user_id):
     user = User.query.get(user_id)
@@ -84,9 +95,9 @@ def get_notifications(user_id):
 def get_renewal_reminder(user_id):
     user = User.query.get(user_id)
     if user.membership_type in ['basic', 'premium']:
-        days_until_renewal = (user.monthly_reset - datetime.utcnow()).days
+        days_until_renewal = (user.membership_end_date - datetime.utcnow()).days
         if days_until_renewal <= 7:
-            current_price = Membership.get_price(user.membership_type)
+            current_price = Membership.get_price(user.membership_type, user.membership_duration)
             if current_price > user.membership_price:
                 return f"Tu membresía se renovará en {days_until_renewal} días. El nuevo precio será de ${current_price:.2f}."
             else:

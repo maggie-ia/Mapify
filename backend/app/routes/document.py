@@ -1,12 +1,10 @@
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.document import Document
 from app.models.user import User
-from app.services.text_processing import summarize_text, paraphrase_text, synthesize_text, extract_relevant_phrases, generate_concept_map, translate_text
 from app import db
 from werkzeug.utils import secure_filename
 import os
-from io import BytesIO
 
 document_bp = Blueprint('document', __name__)
 
@@ -25,22 +23,21 @@ def upload_document():
         return jsonify({"message": "No selected file"}), 400
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+        file_path = os.path.join(os.getenv('UPLOAD_FOLDER'), filename)
         file.save(file_path)
         
-        with open(file_path, 'r') as f:
-            content = f.read()
+        ocr_text = request.form.get('ocrText', '')
         
         new_document = Document(
             filename=filename,
-            content=content,
+            content=ocr_text if ocr_text else file.read().decode('utf-8'),
             user_id=get_jwt_identity(),
             file_type=filename.rsplit('.', 1)[1].lower()
         )
         db.session.add(new_document)
         db.session.commit()
         
-        return jsonify({"message": "File uploaded successfully"}), 201
+        return jsonify({"message": "File uploaded successfully", "document_id": new_document.id}), 201
     return jsonify({"message": "File type not allowed"}), 400
 
 @document_bp.route('/list', methods=['GET'])
