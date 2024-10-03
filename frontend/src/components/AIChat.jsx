@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
+<<<<<<< HEAD
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -12,10 +13,16 @@ import ConceptMap from './ConceptMap';
 import ConversationCategories from './ConversationCategories';
 import ChatPersonalization from './ChatPersonalization';
 import TagManager from './TagManager';
+=======
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 import ChatInput from './ChatInput';
 import ChatMessages from './ChatMessages';
 import OperationSelector from './OperationSelector';
 import SuggestedQuestions from './SuggestedQuestions';
+<<<<<<< HEAD
+=======
+import ProblemSolvingResults from './ProblemSolvingResults';
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 import { toast } from 'react-hot-toast';
 import { debounce } from 'lodash';
 import { logChatInteraction } from '../services/analyticsService';
@@ -29,6 +36,7 @@ const AIChat = ({ documentId }) => {
     const { user } = useAuth();
     const { language } = useLanguage();
 
+<<<<<<< HEAD
     const translations = {
         es: {
             placeholder: "Escribe tu pregunta aquí...",
@@ -87,6 +95,8 @@ const AIChat = ({ documentId }) => {
         }
     };
 
+=======
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
     const { data: chatData, isLoading, error, refetch } = useQuery({
         queryKey: ['chatConversation', documentId],
         queryFn: () => axios.get(`/api/chat/${documentId}`).then(res => res.data),
@@ -114,9 +124,15 @@ const AIChat = ({ documentId }) => {
         },
         onError: (error) => {
             if (error.response && error.response.status === 403) {
+<<<<<<< HEAD
                 toast.error(translations[language].usageLimitReached);
             } else {
                 toast.error(translations[language].errorSending);
+=======
+                toast.error('Has alcanzado el límite de uso para tu membresía');
+            } else {
+                toast.error('Error al enviar el mensaje');
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
             }
             console.error('Error sending message:', error);
             reportSuspiciousActivity(user.id, { action: 'message_send_error', error: error.message });
@@ -137,6 +153,7 @@ const AIChat = ({ documentId }) => {
             toast.error('Entrada inválida detectada. Por favor, intenta de nuevo.');
         }
     }, 300), [inputMessage, operation, chatData, user.id]);
+<<<<<<< HEAD
 
     const handleFeedback = useCallback((messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
@@ -177,6 +194,8 @@ const AIChat = ({ documentId }) => {
             })
             .catch(() => toast.error('Error adding tag'));
     }, [documentId, user.id]);
+=======
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 
     if (user.membership_type !== 'premium') {
         return <p className="text-quaternary">El chat de IA solo está disponible para usuarios premium.</p>;
@@ -199,6 +218,7 @@ const AIChat = ({ documentId }) => {
             {operation === 'problemSolving' && (
                 <ProblemSolvingResults results={messages[messages.length - 1]?.content} />
             )}
+<<<<<<< HEAD
             <ChatPersonalization />
             <Select onValueChange={setOperation} defaultValue={operation}>
                 <SelectTrigger className="w-full mb-4">
@@ -269,6 +289,8 @@ const AIChat = ({ documentId }) => {
             </div>
             <TagManager tags={tags} onAddTag={handleAddTag} />
             <ConversationCategories />
+=======
+>>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
         </div>
     );
 };
