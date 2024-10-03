@@ -29,59 +29,16 @@ const AIChat = ({ documentId }) => {
 
     const translations = {
         es: {
-            placeholder: "Escribe tu pregunta aquí...",
-            send: "Enviar",
-            loading: "Cargando...",
-            error: "Error al cargar el chat",
-            notAvailable: "El chat con IA solo está disponible para usuarios premium.",
-            selectOperation: "Selecciona una operación",
-            chat: "Chat",
-            summarize: "Resumir",
-            paraphrase: "Parafrasear",
-            synthesize: "Sintetizar",
-            relevantPhrases: "Frases Relevantes",
-            conceptMap: "Mapa Conceptual",
-            translate: "Traducir",
-            errorSending: "Error al enviar el mensaje",
-            errorOperation: "Error al realizar la operación",
-            feedbackPositive: "¿Fue útil esta respuesta?",
-            feedbackNegative: "¿No fue útil esta respuesta?",
-            suggestedQuestions: "Preguntas sugeridas:",
-            usageLimitReached: "Has alcanzado el límite de uso del chat para este período.",
-            saveConversation: "Guardar conversación",
-            loadConversation: "Cargar conversación",
-            addTag: "Añadir etiqueta",
-            conversationSaved: "Conversación guardada exitosamente",
-            conversationLoaded: "Conversación cargada exitosamente"
+            problemSolving: "Resolver problema",
+            explainProblem: "Explicar problema",
         },
         en: {
-            placeholder: "Type your question here...",
-            send: "Send",
-            loading: "Loading...",
-            error: "Error loading chat",
-            notAvailable: "AI chat is only available for premium users.",
-            selectOperation: "Select an operation",
-            chat: "Chat",
-            summarize: "Summarize",
-            paraphrase: "Paraphrase",
-            synthesize: "Synthesize",
-            relevantPhrases: "Relevant Phrases",
-            conceptMap: "Concept Map",
-            translate: "Translate",
-            errorSending: "Error sending message",
-            errorOperation: "Error performing operation",
-            feedbackPositive: "Was this response helpful?",
-            feedbackNegative: "Was this response not helpful?",
-            suggestedQuestions: "Suggested questions:",
-            usageLimitReached: "You have reached your chat usage limit for this period.",
-            saveConversation: "Save conversation",
-            loadConversation: "Load conversation",
-            addTag: "Add tag",
-            conversationSaved: "Conversation saved successfully",
-            conversationLoaded: "Conversation loaded successfully"
+            problemSolving: "Solve problem",
+            explainProblem: "Explain problem",
         },
         fr: {
-            // ... (French translations omitted for brevity, but should be included in the actual implementation)
+            problemSolving: "Résoudre le problème",
+            explainProblem: "Expliquer le problème",
         }
     };
 
@@ -137,45 +94,15 @@ const AIChat = ({ documentId }) => {
         }
     }, 300), [inputMessage, operation, chatData, user.id]);
 
-    const handleFeedback = useCallback((messageId, isPositive) => {
-        setFeedback({ messageId, isPositive });
-        axios.post('/api/chat/feedback', { messageId, isPositive })
-            .then(() => {
-                toast.success('Feedback sent successfully');
-                logChatInteraction(user.id, 'feedback_sent', { messageId, isPositive });
-            })
-            .catch(() => toast.error('Error sending feedback'));
-    }, [user.id]);
+    const handleProblemSolving = useCallback((problem) => {
+        setOperation('problemSolving');
+        setInputMessage(`Resuelve el siguiente problema: ${problem}`);
+    }, []);
 
-    const handleSaveConversation = useCallback(() => {
-        axios.post('/api/chat/save', { documentId, messages, tags })
-            .then(() => {
-                toast.success(translations[language].conversationSaved);
-                logChatInteraction(user.id, 'conversation_saved', { documentId });
-            })
-            .catch(() => toast.error('Error saving conversation'));
-    }, [documentId, messages, tags, user.id, language]);
-
-    const handleLoadConversation = useCallback(() => {
-        axios.get(`/api/chat/load/${documentId}`)
-            .then((response) => {
-                setMessages(response.data.messages);
-                setTags(response.data.tags);
-                toast.success(translations[language].conversationLoaded);
-                logChatInteraction(user.id, 'conversation_loaded', { documentId });
-            })
-            .catch(() => toast.error('Error loading conversation'));
-    }, [documentId, user.id, language]);
-
-    const handleAddTag = useCallback((newTag) => {
-        setTags(prevTags => [...prevTags, newTag]);
-        axios.post('/api/chat/tag', { documentId, tag: newTag })
-            .then(() => {
-                toast.success('Tag added successfully');
-                logChatInteraction(user.id, 'tag_added', { documentId, tag: newTag });
-            })
-            .catch(() => toast.error('Error adding tag'));
-    }, [documentId, user.id]);
+    const handleExplainProblem = useCallback((problem) => {
+        setOperation('explainProblem');
+        setInputMessage(`Explica el siguiente problema: ${problem}`);
+    }, []);
 
     if (user.membership_type !== 'premium') {
         return <p className="text-quaternary">{translations[language].notAvailable}</p>;
@@ -202,12 +129,28 @@ const AIChat = ({ documentId }) => {
                     <SelectItem value="relevantPhrases">{translations[language].relevantPhrases}</SelectItem>
                     <SelectItem value="conceptMap">{translations[language].conceptMap}</SelectItem>
                     <SelectItem value="translate">{translations[language].translate}</SelectItem>
+                    <SelectItem value="problemSolving">{translations[language].problemSolving}</SelectItem>
+                    <SelectItem value="explainProblem">{translations[language].explainProblem}</SelectItem>
                 </SelectContent>
             </Select>
             <ScrollArea className="h-80 mb-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`mb-2 p-2 rounded ${msg.sender === 'user' ? 'bg-tertiary text-white' : 'bg-secondary'}`}>
                         {msg.content}
+                        {msg.sender === 'ai' && msg.problems && (
+                            <div className="mt-2">
+                                {msg.problems.map((problem, problemIndex) => (
+                                    <div key={problemIndex} className="mt-1">
+                                        <Button onClick={() => handleProblemSolving(problem)} className="mr-2">
+                                            {translations[language].problemSolving}
+                                        </Button>
+                                        <Button onClick={() => handleExplainProblem(problem)}>
+                                            {translations[language].explainProblem}
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {msg.sender === 'ai' && (
                             <div className="mt-2">
                                 <Button onClick={() => handleFeedback(index, true)} className="mr-2">

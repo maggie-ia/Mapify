@@ -7,6 +7,7 @@ import base64
 from functools import lru_cache
 from deep_translator import GoogleTranslator
 from .embedding_service import get_relevant_context
+from .text_processing import identify_problems
 
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -18,7 +19,8 @@ def process_ai_response(document_content, user_question, operation, embeddings):
         if operation == 'chat':
             relevant_context = get_relevant_context(user_question, document_content, embeddings)
             result = qa_model(question=user_question, context=relevant_context)
-            return result['answer']
+            problems = identify_problems(relevant_context)
+            return {'answer': result['answer'], 'problems': problems}
         elif operation == 'summarize':
             return summarize_text(document_content)
         elif operation == 'paraphrase':
@@ -32,6 +34,10 @@ def process_ai_response(document_content, user_question, operation, embeddings):
         elif operation == 'translate':
             target_language = user_question  # Assume the user_question contains the target language
             return translate_text(document_content, target_language)
+        elif operation == 'problemSolving':
+            return solve_problem(user_question)
+        elif operation == 'explainProblem':
+            return explain_problem(user_question)
         else:
             return "Operación no soportada."
     except Exception as e:
@@ -104,3 +110,15 @@ def generate_suggested_questions(document_content, previous_answer):
     questions.append("¿Puedes elaborar más sobre la respuesta anterior?")
     questions.append("¿Hay algún aspecto importante que no hayamos cubierto?")
     return questions
+
+def solve_problem(problem):
+    # Aquí implementarías la lógica para resolver problemas matemáticos, físicos o químicos
+    # Por ahora, devolveremos una respuesta genérica
+    return f"Para resolver el problema '{problem}', necesitaríamos seguir estos pasos: 1) Identificar las variables, 2) Aplicar las fórmulas relevantes, 3) Realizar los cálculos necesarios. Sin embargo, para una solución precisa, se requeriría un sistema más avanzado de resolución de problemas."
+
+def explain_problem(problem):
+    # Aquí implementarías la lógica para explicar problemas matemáticos, físicos o químicos
+    # Por ahora, devolveremos una explicación genérica
+    return f"El problema '{problem}' parece estar relacionado con [área del problema]. Para entenderlo mejor, es importante considerar los siguientes conceptos: [conceptos relevantes]. La clave para abordar este tipo de problemas es [estrategia general]."
+
+# ... keep existing code
