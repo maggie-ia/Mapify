@@ -11,12 +11,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from deep_translator import GoogleTranslator
 import language_tool_python
-import re
-from transformers import pipeline
-import spacy
-import PyPDF2
-from io import BytesIO
-import docx
 
 summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
@@ -43,175 +37,124 @@ def identify_problems(text):
 
     return problems
 
-def solve_problem(problem):
+def solve_problem(text):
     """
-    Resuelve un problema matemático, físico o químico ofreciendo múltiples métodos.
+    Intenta resolver un problema matemático, físico o químico.
     """
-    methods = [
-        ("Método analítico", solve_problem_analytical(problem)),
-        ("Método numérico", solve_problem_numerical(problem)),
-        ("Método gráfico", solve_problem_graphical(problem))
-    ]
-    
-    step_by_step = explain_problem(problem)
-    resources = get_additional_resources(problem)
+    problem_type = identify_problem_type(text)
+    methods = generate_solution_methods(text, problem_type)
+    step_by_step = explain_problem(text, problem_type)
+    resources = get_additional_resources(problem_type)
     
     return {
+        "problem_type": problem_type,
         "methods": methods,
         "step_by_step": step_by_step,
         "resources": resources
     }
 
-def solve_problem_analytical(problem):
-    # Implementar método analítico
-    return "Solución analítica del problema utilizando ecuaciones y fórmulas matemáticas."
+def identify_problem_type(text):
+    # Implementa la lógica para identificar el tipo de problema
+    # Por ahora, usaremos una versión simplificada
+    if re.search(r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b', text, re.IGNORECASE):
+        return "matemática"
+    elif re.search(r'\b(?:velocidad|aceleración|fuerza|energía)\b', text, re.IGNORECASE):
+        return "física"
+    elif re.search(r'\b(?:mol[es]?|concentración|pH)\b', text, re.IGNORECASE):
+        return "química"
+    else:
+        return "general"
 
-def solve_problem_numerical(problem):
-    # Implementar método numérico
-    return "Solución numérica del problema utilizando algoritmos computacionales."
-
-def solve_problem_graphical(problem):
-    # Implementar método gráfico
-    return "Solución gráfica del problema utilizando representaciones visuales."
-
-def explain_problem(problem):
-    """
-    Proporciona una explicación detallada paso a paso de cómo abordar un problema.
-    """
-    steps = [
-        "Paso 1: Identificar las variables y datos conocidos del problema.",
-        f"En este problema, las variables identificadas son: [lista de variables]",
-        "Paso 2: Determinar qué se está pidiendo calcular o encontrar.",
-        f"El objetivo es: [objetivo del problema]",
-        "Paso 3: Seleccionar la fórmula o método apropiado para resolver el problema.",
-        f"Para este problema, utilizaremos: [fórmula o método seleccionado]",
-        "Paso 4: Aplicar el método seleccionado, mostrando cada paso del cálculo.",
-        f"[Detalles de los cálculos paso a paso]",
-        "Paso 5: Verificar que la solución tenga sentido en el contexto del problema.",
-        f"[Verificación de la solución]",
-        "Paso 6: Interpretar el resultado y formular una conclusión.",
-        f"[Interpretación y conclusión]"
+def generate_solution_methods(text, problem_type):
+    # Implementa la lógica para generar métodos de solución
+    # Por ahora, usaremos métodos genéricos
+    return [
+        ("Método analítico", "Resolver el problema usando ecuaciones y fórmulas."),
+        ("Método numérico", "Utilizar algoritmos computacionales para aproximar la solución."),
+        ("Método gráfico", "Representar visualmente el problema y su solución.")
     ]
-    
-    return "\n".join(steps)
 
-def get_additional_resources(problem):
+def explain_problem(text, problem_type):
+    # Implementa la lógica para explicar el problema paso a paso
+    # Por ahora, usaremos una explicación genérica
+    return f"""
+    1. Identifica las variables y datos conocidos del problema.
+    2. Determina qué se está pidiendo calcular o encontrar.
+    3. Selecciona la fórmula o método apropiado para resolver el problema.
+    4. Aplica el método seleccionado, mostrando cada paso del cálculo.
+    5. Verifica que la solución tenga sentido en el contexto del problema.
+    6. Interpreta el resultado y formula una conclusión.
     """
-    Proporciona recursos adicionales relacionados con el problema.
-    """
-    # En una implementación real, esto podría ser una llamada a una base de datos o API
-    resources = [
+
+def get_additional_resources(problem_type):
+    # Implementa la lógica para obtener recursos adicionales
+    # Por ahora, usaremos recursos genéricos
+    return [
         {
-            "title": "Khan Academy - Resolución de problemas",
-            "url": "https://es.khanacademy.org/math/arithmetic/multiplication-division"
+            "title": f"Khan Academy - Resolución de problemas de {problem_type}",
+            "url": f"https://es.khanacademy.org/math/{problem_type}"
         },
         {
             "title": "Wolfram Alpha - Calculadora y solucionador de problemas",
             "url": "https://www.wolframalpha.com/"
-        },
-        {
-            "title": "MIT OpenCourseWare - Métodos de resolución de problemas",
-            "url": "https://ocw.mit.edu/courses/mathematics/"
         }
     ]
-    return resources
 
-def explain_problem(problem):
-    """
-    Proporciona una explicación detallada paso a paso de cómo abordar un problema.
-    """
-    summary = summarize_text(text, max_length=max_length, min_length=min_length)
-    synthesis = paraphrase_text(summary, max_length=max_length)
-    return synthesis
+def summarize_text(text, max_length=150, min_length=50):
+    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
+    return summary[0]['summary_text']
 
-def extract_relevant_phrases(text, num_phrases=5):
-    """
-    Extrae las frases más relevantes del texto utilizando TF-IDF.
-    """
-    sentences = text.split('.')
-    vectorizer = TfidfVectorizer(stop_words='spanish')
-    tfidf_matrix = vectorizer.fit_transform(sentences)
-    sentence_scores = tfidf_matrix.sum(axis=1).A1
-    top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
-    relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
-    return relevant_phrases
+def paraphrase_text(text):
+    # Implementar la lógica de paráfrasis aquí
+    return f"Paráfrasis de: {text}"
 
-def generate_concept_map(text, max_nodes=6):
-    """
-    Genera un mapa conceptual a partir del texto proporcionado.
-    """
-    doc = nlp(text)
+def synthesize_text(text):
+    # Implementar la lógica de síntesis aquí
+    return f"Síntesis de: {text}"
+
+def generate_relevant_phrases(text):
+    # Implementar la lógica para generar frases relevantes
+    return ["Frase relevante 1", "Frase relevante 2", "Frase relevante 3"]
+
+def generate_concept_map(text):
+    # Implementar la lógica para generar un mapa conceptual
+    # Esta es una implementación simplificada
+    G = nx.Graph()
+    G.add_node("Concepto Central")
+    G.add_edge("Concepto Central", "Concepto 1")
+    G.add_edge("Concepto Central", "Concepto 2")
     
-    return "\n".join(steps)
+    plt.figure(figsize=(10, 8))
+    nx.draw(G, with_labels=True, node_color='lightblue', node_size=3000, font_size=10, font_weight='bold')
+    
+    img_buffer = BytesIO()
+    plt.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+    img_str = base64.b64encode(img_buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{img_str}"
 
-def get_additional_resources(problem):
-    """
-    Proporciona recursos adicionales relacionados con el problema.
-    """
+def translate_text(text, target_language):
     translator = GoogleTranslator(source='auto', target=target_language)
-    translated_text = translator.translate(text)
-    return translated_text
+    return translator.translate(text)
 
-def get_writing_assistance(text, membership_type):
-    """
-    Proporciona sugerencias de escritura basadas en el texto proporcionado.
-    """
+def check_grammar(text):
     matches = tool.check(text)
-    suggestions = []
+    return [str(error) for error in matches]
+
+def extract_text_from_file(file_path):
+    file_extension = file_path.split('.')[-1].lower()
     
-    for match in matches:
-        if membership_type == 'premium' or (membership_type == 'basic' and match.ruleIssueType in ['grammar', 'typos']):
-            suggestion = {
-                'original': text[match.offset:match.offset + match.errorLength],
-                'suggested': match.replacements[0] if match.replacements else '',
-                'message': match.message,
-                'type': match.ruleIssueType
-            }
-            suggestions.append(suggestion)
-    
-    return suggestions[:10]  # Limitar a 10 sugerencias para evitar sobrecarga
-
-def identify_problems(text):
-    """
-    Identifica problemas matemáticos, físicos o químicos en el texto.
-    """
-    math_pattern = r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b.*?(?:\d+|\bx\b|\by\b)'
-    physics_pattern = r'\b(?:velocidad|aceleración|fuerza|energía)\b.*?(?:\d+\s*[a-zA-Z]+/?[a-zA-Z]*|\d+\s*\w+\s*por\s*\w+)'
-    chemistry_pattern = r'\b(?:mol[es]?|concentración|pH)\b.*?(?:\d+(?:\.\d+)?|\w+\s*\+\s*\w+)'
-
-    problems = []
-    for sentence in nlp(text).sents:
-        sentence_text = sentence.text
-        if re.search(math_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('matemática', sentence_text))
-        elif re.search(physics_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('física', sentence_text))
-        elif re.search(chemistry_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('química', sentence_text))
-
-    return problems
-
-def solve_problem(problem):
-    """
-    Intenta resolver un problema matemático, físico o químico.
-    """
-    # Esta es una implementación básica. En un sistema real, se utilizaría
-    # un motor de resolución de problemas más avanzado.
-    return f"Para resolver el problema '{problem}', se recomienda seguir estos pasos:\n" \
-           f"1. Identificar las variables y datos conocidos.\n" \
-           f"2. Determinar la fórmula o ecuación apropiada.\n" \
-           f"3. Sustituir los valores conocidos en la ecuación.\n" \
-           f"4. Resolver la ecuación para encontrar la incógnita.\n" \
-           f"5. Verificar que la solución tenga sentido en el contexto del problema."
-
-def explain_problem(problem):
-    """
-    Proporciona una explicación detallada de cómo abordar un problema.
-    """
-    return f"Para entender y resolver el problema '{problem}', considera lo siguiente:\n" \
-           f"1. Contexto: Identifica el área de estudio (matemáticas, física, química) y los conceptos relevantes.\n" \
-           f"2. Datos: Enumera toda la información proporcionada en el enunciado del problema.\n" \
-           f"3. Incógnita: Determina qué se está pidiendo calcular o encontrar.\n" \
-           f"4. Método: Selecciona la técnica o fórmula apropiada para resolver el problema.\n" \
-           f"5. Resolución: Aplica paso a paso el método seleccionado.\n" \
-           f"6. Comprobación: Verifica que la solución sea lógica y consistente con el enunciado."
+    if file_extension in ['jpg', 'jpeg', 'png']:
+        return pytesseract.image_to_string(file_path)
+    elif file_extension == 'pdf':
+        pages = convert_from_path(file_path)
+        text = ""
+        for page in pages:
+            text += pytesseract.image_to_string(page)
+        return text
+    elif file_extension in ['doc', 'docx']:
+        return docx2txt.process(file_path)
+    else:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()

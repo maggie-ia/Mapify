@@ -5,7 +5,7 @@ from app.models.document import Document
 from app.services.text_processing import (
     summarize_text, paraphrase_text, synthesize_text,
     generate_concept_map, extract_relevant_phrases, translate_text,
-    get_writing_assistance
+    get_writing_assistance, solve_problem
 )
 from app.services.membership_service import (
     can_perform_operation, increment_operation, get_page_limit,
@@ -17,7 +17,10 @@ from marshmallow import Schema, fields, validate
 text_processing = Blueprint('text_processing', __name__)
 
 class ProcessTextSchema(Schema):
-    operation = fields.Str(required=True, validate=validate.OneOf(['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate']))
+    operation = fields.Str(required=True, validate=validate.OneOf([
+        'summarize', 'paraphrase', 'synthesize', 'conceptMap', 
+        'relevantPhrases', 'translate', 'problemSolving'
+    ]))
     text = fields.Str(required=True)
     targetLanguage = fields.Str()
     pageCount = fields.Int(required=True, validate=validate.Range(min=1))
@@ -46,26 +49,8 @@ def process_text():
     if data['pageCount'] > page_limit:
         return jsonify({"error": f"Document exceeds the {page_limit} page limit for your membership level"}), 403
 
-    result = None
     try:
-        if operation == 'summarize':
-            result = summarize_text(text)
-        elif operation == 'paraphrase':
-            result = paraphrase_text(text)
-        elif operation == 'synthesize':
-            result = synthesize_text(text)
-        elif operation == 'conceptMap':
-            max_nodes = get_concept_map_node_limit(user_id)
-            result = generate_concept_map(text, max_nodes)
-        elif operation == 'relevantPhrases':
-            result = extract_relevant_phrases(text)
-        elif operation == 'translate':
-            target_language = data.get('targetLanguage')
-            if not target_language:
-                return jsonify({"error": "Target language is required for translation"}), 400
-            if not can_translate_to_language(user_id, target_language):
-                return jsonify({"error": "Translation to this language is not available in your membership level"}), 403
-            result = translate_text(text, target_language)
+        result = perform_operation(operation, text, data, user_id)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -77,5 +62,29 @@ def process_text():
     increment_operation(user_id, operation)
 
     return jsonify({"result": result}), 200
+
+def perform_operation(operation, text, data, user_id):
+    if operation == 'summarize':
+        return summarize_text(text)
+    elif operation == 'paraphrase':
+        return paraphrase_text(text)
+    elif operation == 'synthesize':
+        return synthesize_text(text)
+    elif operation == 'conceptMap':
+        max_nodes = get_concept_map_node_limit(user_id)
+        return generate_concept_map(text, max_nodes)
+    elif operation == 'relevantPhrases':
+        return extract_relevant_phrases(text)
+    elif operation == 'translate':
+        target_language = data.get('targetLanguage')
+        if not target_language:
+            raise ValueError("Target language is required for translation")
+        if not can_translate_to_language(user_id, target_language):
+            raise ValueError("Translation to this language is not available in your membership level")
+        return translate_text(text, target_language)
+    elif operation == 'problemSolving':
+        return solve_problem(text)
+    else:
+        raise ValueError("Unsupported operation")
 
 # ... keep existing code for other routes
