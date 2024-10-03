@@ -45,6 +45,8 @@ const OperationSelection = () => {
             upgradeMessage: 'Actualiza tu membresía para acceder a esta función',
             operationsLeft: 'Operaciones restantes: ',
             selectLanguage: 'Seleccionar idioma para traducción',
+            noTextUploaded: 'No se ha subido ningún texto. Por favor, sube un documento primero.',
+            unexpectedError: 'Ha ocurrido un error inesperado'
         },
         en: {
             title: 'Select an operation',
@@ -61,6 +63,8 @@ const OperationSelection = () => {
             upgradeMessage: 'Upgrade your membership to access this feature',
             operationsLeft: 'Operations left: ',
             selectLanguage: 'Select language for translation',
+            noTextUploaded: 'No text uploaded. Please upload a document first.',
+            unexpectedError: 'An unexpected error occurred'
         },
         fr: {
             title: 'Sélectionnez une opération',
@@ -77,58 +81,11 @@ const OperationSelection = () => {
             upgradeMessage: 'Mettez à niveau votre adhésion pour accéder à cette fonctionnalité',
             operationsLeft: 'Opérations restantes : ',
             selectLanguage: 'Sélectionner la langue pour la traduction',
+            noTextUploaded: 'Aucun texte n\'a été téléchargé. Veuillez d\'abord télécharger un document.',
+            unexpectedError: 'Une erreur inattendue s\'est produite'
         },
     };
 
-<<<<<<< HEAD
-  return (
-    <div className="container mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
-      <h1 className="text-4xl font-bold mb-6 text-center text-primary">{translations[language].title}</h1>
-      {membershipInfo && (
-        <p className="text-center mb-4 text-quaternary">
-          {translations[language].operationsLeft}
-          {membershipInfo.membership_type === 'premium' ? 'Unlimited' : 
-           membershipInfo.weekly_operations_remaining}
-        </p>
-      )}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        {Object.entries(translations[language].options).map(([key, value]) => (
-          <Button
-            key={key}
-            onClick={() => handleOperationSelect(key)}
-            disabled={!isOperationAllowed(key, membershipInfo?.membership_type) || isProcessing}
-            className={`bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300 ${
-              (!isOperationAllowed(key, membershipInfo?.membership_type) || isProcessing) && 'opacity-50 cursor-not-allowed'
-            }`}
-          >
-            {value}
-          </Button>
-        ))}
-        <Button
-            onClick={() => handleOperationSelect('problemSolving')}
-            disabled={isProcessing}
-            className="bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300"
-        >
-            {translations[language].problemSolving}
-        </Button>
-      </div>
-      {isOperationAllowed('translate', membershipInfo?.membership_type) && (
-        <div className="mt-4">
-          <label htmlFor="language-select" className="block mb-2 text-sm font-medium text-quaternary">
-            {translations[language].selectLanguage}
-          </label>
-          <Select onValueChange={setSelectedLanguage} defaultValue={selectedLanguage}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en" disabled={!canTranslateToLanguage('en', membershipInfo?.membership_type)}>English</SelectItem>
-              <SelectItem value="es" disabled={!canTranslateToLanguage('es', membershipInfo?.membership_type)}>Español</SelectItem>
-              <SelectItem value="fr" disabled={!canTranslateToLanguage('fr', membershipInfo?.membership_type)}>Français</SelectItem>
-              <SelectItem value="de" disabled={!canTranslateToLanguage('de', membershipInfo?.membership_type)}>Deutsch</SelectItem>
-            </SelectContent>
-          </Select>
-=======
     const processTextMutation = useMutation({
         mutationFn: processText,
         onSuccess: (result) => {
@@ -138,7 +95,7 @@ const OperationSelection = () => {
         onError: (error) => {
             setIsProcessing(false);
             console.error('Error processing text:', error);
-            toast.error(`Error: ${error.message || 'An unexpected error occurred'}`);
+            toast.error(`Error: ${error.message || translations[language].unexpectedError}`);
         },
     });
 
@@ -150,7 +107,7 @@ const OperationSelection = () => {
 
         const text = localStorage.getItem('uploadedText');
         if (!text) {
-            toast.error('No text uploaded. Please upload a document first.');
+            toast.error(translations[language].noTextUploaded);
             return;
         }
 
@@ -194,16 +151,8 @@ const OperationSelection = () => {
                         {value}
                     </Button>
                 ))}
-                <Button
-                    onClick={() => handleOperationSelect('problemSolving')}
-                    disabled={isProcessing}
-                    className="bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300"
-                >
-                    {translations[language].problemSolving}
-                </Button>
             </div>
             {isProcessing && <ProgressiveLoading progress={progress} />}
->>>>>>> 40925bab8e4b169bad3baf574ac6f39a85827e3c
         </div>
     );
 };
