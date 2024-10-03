@@ -5,8 +5,11 @@ from flask_jwt_extended import JWTManager
 from .config import Config
 from .utils.logger import setup_logger
 from .utils.error_handler import setup_error_handlers
+<<<<<<< HEAD
 import logging
 from .config.logging_config import setup_logging
+=======
+>>>>>>> 04e77d524bae34fb8e59c2e49fffece4081ec6b3
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -22,6 +25,7 @@ def create_app(config_class=Config):
 
     setup_logger(app)
     setup_error_handlers(app)
+<<<<<<< HEAD
     setup_logging(app)
 
     from .routes import bp as main_bp
@@ -40,3 +44,10 @@ def create_app(config_class=Config):
     return app
 
 from . import models
+=======
+
+    from .routes import bp as main_bp
+    app.register_blueprint(main_bp)
+
+    return app
+>>>>>>> 04e77d524bae34fb8e59c2e49fffece4081ec6b3

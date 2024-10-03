@@ -82,6 +82,7 @@ const FileUpload = ({ onFileUploaded }) => {
     };
 
     const handleUpload = async () => {
+<<<<<<< HEAD
         if (file) {
             setIsUploading(true);
             setProgress(0);
@@ -98,6 +99,23 @@ const FileUpload = ({ onFileUploaded }) => {
                 setIsUploading(false);
                 toast.error(error.message || translations[language].uploadError);
             }
+=======
+        if (!isValid) return;
+
+        setIsUploading(true);
+        setProgress(0);
+        try {
+            const response = await uploadFile(file, (progress) => {
+                setProgress(progress);
+            });
+            onFileUploaded(response);
+            setIsUploading(false);
+            setFile(null);
+            addNotification('success', translations[language].uploadSuccess);
+        } catch (error) {
+            setIsUploading(false);
+            addNotification('error', error.message || translations[language].uploadError);
+>>>>>>> 04e77d524bae34fb8e59c2e49fffece4081ec6b3
         }
     };
 
@@ -110,7 +128,10 @@ const FileUpload = ({ onFileUploaded }) => {
                 accept=".pdf,.txt,.docx"
                 className="mb-4"
             />
+<<<<<<< HEAD
             {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
+=======
+>>>>>>> 04e77d524bae34fb8e59c2e49fffece4081ec6b3
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}
