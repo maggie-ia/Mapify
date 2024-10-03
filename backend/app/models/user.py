@@ -67,87 +67,8 @@ class User(db.Model):
         else:  # free
             return self.weekly_operations < 3
 
-    def can_use_chat(self):
-        self._reset_chat_usage_if_needed()
-        if self.membership_type == 'premium':
-            return True
-        elif self.membership_type == 'basic':
-            return self.chat_usage_count < 50  # 50 usos por mes para básico
-        else:  # free
-            return self.chat_usage_count < 10  # 10 usos por mes para gratuito
-
-    def increment_chat_usage(self):
-        self._reset_chat_usage_if_needed()
-        self.chat_usage_count += 1
-        db.session.commit()
-
-    def _reset_chat_usage_if_needed(self):
-        now = datetime.utcnow()
-        if now - self.chat_usage_reset > timedelta(days=30):
-            self.chat_usage_count = 0
-            self.chat_usage_reset = now
-            db.session.commit()
-
-    def can_export(self):
-        self._reset_counters_if_needed()
-        if self.is_trial or self.membership_type == 'premium':
-            return True
-        elif self.membership_type == 'basic':
-            return self.weekly_exports < 10
-        else:  # free
-            return self.weekly_exports < 1
-
-    def increment_operation(self):
-        self._reset_counters_if_needed()
-        self.weekly_operations += 1
-        db.session.commit()
-
-    def increment_export(self):
-        self._reset_counters_if_needed()
-        self.weekly_exports += 1
-        db.session.commit()
-
-    def _reset_counters_if_needed(self):
-        now = datetime.utcnow()
-        if now - self.last_reset > timedelta(days=7):
-            self.weekly_operations = 0
-            self.weekly_exports = 0
-            self.last_reset = now
-        if now - self.monthly_reset > timedelta(days=30):
-            self.monthly_reset = now
-        if self.is_trial and now > self.trial_end_date:
-            self.end_trial()
-        if now > self.membership_end_date:
-            self.renew_membership()
-        db.session.commit()
-
-    def renew_membership(self):
-        if self.membership_type != 'free':
-            self.membership_start_date = datetime.utcnow()
-            if self.membership_duration == 'monthly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=30)
-            elif self.membership_duration == 'sixMonths':
-                self.membership_end_date = self.membership_start_date + timedelta(days=180)
-            elif self.membership_duration == 'yearly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=365)
-        db.session.commit()
-
-    def get_page_limit(self):
-        if self.is_trial or self.membership_type == 'premium':
-            return float('inf')  # Sin límite
-        elif self.membership_type == 'basic':
-            return 10
-        else:  # free
-            return 5
-
-    def can_translate_to_language(self, language):
-        if self.is_trial or self.membership_type == 'premium':
-            return True
-        elif self.membership_type == 'basic':
-            allowed_languages = ['en', 'es', 'fr', 'de']
-            return language in allowed_languages
-        else:  # free
-            return language in ['en', 'es']
+    def can_use_problem_solving(self):
+        return True  # Disponible para todas las membresías
 
     def get_membership_info(self):
         self._reset_counters_if_needed()
@@ -164,8 +85,17 @@ class User(db.Model):
             'page_limit': self.get_page_limit(),
             'can_create_concept_maps': self.membership_type != 'free' or self.is_trial,
             'concept_map_node_limit': float('inf') if self.membership_type == 'premium' or self.is_trial else 6 if self.membership_type == 'basic' else 0,
-            'chat_usage_remaining': self.get_chat_usage_remaining()
+            'can_use_problem_solving': self.can_use_problem_solving(),
+            'problem_solving_limit': self.get_problem_solving_limit()
         }
+
+    def get_problem_solving_limit(self):
+        if self.is_trial or self.membership_type == 'premium':
+            return float('inf')  # Sin límite
+        elif self.membership_type == 'basic':
+            return 20  # 20 usos por mes
+        else:  # free
+            return 5   # 5 usos por semana
 
     def get_weekly_operations_remaining(self):
         if self.is_trial or self.membership_type == 'premium':
