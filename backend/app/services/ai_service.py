@@ -73,7 +73,6 @@ def solve_problem_analytical(problem):
     # Implementar método analítico
     return "Solución analítica del problema"
 
-<<<<<<< HEAD
 def explain_problem(problem):
     # Aquí implementarías la lógica para explicar problemas matemáticos, físicos o químicos
     # Por ahora, devolveremos una explicación genérica
@@ -103,8 +102,6 @@ def solve_problem_analytical(problem):
     # Implementar método analítico
     return "Solución analítica del problema"
 
-=======
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 def solve_problem_numerical(problem):
     # Implementar método numérico
     return "Solución numérica del problema"
@@ -148,7 +145,6 @@ def get_additional_resources(problem):
             "url": "https://ocw.mit.edu/courses/mathematics/"
         }
     ]
-<<<<<<< HEAD
     return resources
 
 def solve_problem_auto(content):
@@ -190,6 +186,3 @@ def extract_text_from_file(file_path):
 def solve_problem_from_file(file_path):
     content = extract_text_from_file(file_path)
     return solve_problem_auto(content)
-=======
-    return resources
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7

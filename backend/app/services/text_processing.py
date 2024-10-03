@@ -4,7 +4,6 @@ import spacy
 import PyPDF2
 from io import BytesIO
 import docx
-<<<<<<< HEAD
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import spacy
@@ -23,27 +22,6 @@ summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('en-US')
-=======
-
-summarizer = pipeline("summarization")
-nlp = spacy.load("es_core_news_sm")
-
-def extract_text_from_pdf(file):
-    # Implementación para extraer texto de archivos PDF
-    pass
-
-def extract_text_from_docx(file):
-    # Implementación para extraer texto de archivos DOCX
-    pass
-
-def process_file(file):
-    # Implementación para procesar archivos
-    pass
-
-def summarize_text(text, max_length=150, min_length=50):
-    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-    return summary[0]['summary_text']
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 
 def identify_problems(text):
     """
@@ -95,7 +73,6 @@ def solve_problem_numerical(problem):
 def solve_problem_graphical(problem):
     # Implementar método gráfico
     return "Solución gráfica del problema utilizando representaciones visuales."
-<<<<<<< HEAD
 
 def explain_problem(problem):
     """
@@ -138,14 +115,11 @@ def get_additional_resources(problem):
         }
     ]
     return resources
-=======
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
 
 def explain_problem(problem):
     """
     Proporciona una explicación detallada paso a paso de cómo abordar un problema.
     """
-<<<<<<< HEAD
     summary = summarize_text(text, max_length=max_length, min_length=min_length)
     synthesis = paraphrase_text(summary, max_length=max_length)
     return synthesis
@@ -167,22 +141,6 @@ def generate_concept_map(text, max_nodes=6):
     Genera un mapa conceptual a partir del texto proporcionado.
     """
     doc = nlp(text)
-=======
-    steps = [
-        "Paso 1: Identificar las variables y datos conocidos del problema.",
-        f"En este problema, las variables identificadas son: [lista de variables]",
-        "Paso 2: Determinar qué se está pidiendo calcular o encontrar.",
-        f"El objetivo es: [objetivo del problema]",
-        "Paso 3: Seleccionar la fórmula o método apropiado para resolver el problema.",
-        f"Para este problema, utilizaremos: [fórmula o método seleccionado]",
-        "Paso 4: Aplicar el método seleccionado, mostrando cada paso del cálculo.",
-        f"[Detalles de los cálculos paso a paso]",
-        "Paso 5: Verificar que la solución tenga sentido en el contexto del problema.",
-        f"[Verificación de la solución]",
-        "Paso 6: Interpretar el resultado y formular una conclusión.",
-        f"[Interpretación y conclusión]"
-    ]
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
     
     return "\n".join(steps)
 
@@ -190,7 +148,6 @@ def get_additional_resources(problem):
     """
     Proporciona recursos adicionales relacionados con el problema.
     """
-<<<<<<< HEAD
     translator = GoogleTranslator(source='auto', target=target_language)
     translated_text = translator.translate(text)
     return translated_text
@@ -258,21 +215,3 @@ def explain_problem(problem):
            f"4. Método: Selecciona la técnica o fórmula apropiada para resolver el problema.\n" \
            f"5. Resolución: Aplica paso a paso el método seleccionado.\n" \
            f"6. Comprobación: Verifica que la solución sea lógica y consistente con el enunciado."
-=======
-    # En una implementación real, esto podría ser una llamada a una base de datos o API
-    resources = [
-        {
-            "title": "Khan Academy - Resolución de problemas",
-            "url": "https://es.khanacademy.org/math/arithmetic/multiplication-division"
-        },
-        {
-            "title": "Wolfram Alpha - Calculadora y solucionador de problemas",
-            "url": "https://www.wolframalpha.com/"
-        },
-        {
-            "title": "MIT OpenCourseWare - Métodos de resolución de problemas",
-            "url": "https://ocw.mit.edu/courses/mathematics/"
-        }
-    ]
-    return resources
->>>>>>> 94895701e64150e9bae3ea32fb31947666b9d2b7
