@@ -169,6 +169,13 @@ const OperationSelection = () => {
             {value}
           </Button>
         ))}
+        <Button
+            onClick={() => handleOperationSelect('problemSolving')}
+            disabled={isProcessing}
+            className="bg-tertiary text-white p-4 rounded-lg hover:bg-quaternary transition-colors duration-300"
+        >
+            {translations[language].problemSolving}
+        </Button>
       </div>
       {isOperationAllowed('translate', membershipInfo?.membership_type) && (
         <div className="mt-4">

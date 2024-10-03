@@ -148,6 +148,9 @@ class User(db.Model):
             return language in allowed_languages
         else:  # free
             return language in ['en', 'es']
+    
+    def can_use_problem_solving(self):
+            return True  # Disponible para todas las membresías   
 
     def get_membership_info(self):
         self._reset_counters_if_needed()
@@ -164,8 +167,18 @@ class User(db.Model):
             'page_limit': self.get_page_limit(),
             'can_create_concept_maps': self.membership_type != 'free' or self.is_trial,
             'concept_map_node_limit': float('inf') if self.membership_type == 'premium' or self.is_trial else 6 if self.membership_type == 'basic' else 0,
-            'chat_usage_remaining': self.get_chat_usage_remaining()
+            'chat_usage_remaining': self.get_chat_usage_remaining(),
+            'can_use_problem_solving': self.can_use_problem_solving(),
+            'problem_solving_limit': self.get_problem_solving_limit()
         }
+
+    def get_problem_solving_limit(self):
+            if self.is_trial or self.membership_type == 'premium':
+                return float('inf')  # Sin límite
+            elif self.membership_type == 'basic':
+                return 20  # 20 usos por mes
+            else:  # free
+                return 5   # 5 usos por semana
 
     def get_weekly_operations_remaining(self):
         if self.is_trial or self.membership_type == 'premium':

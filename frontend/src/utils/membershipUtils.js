@@ -4,26 +4,29 @@ const MEMBERSHIP_LIMITS = {
   free: {
     weeklyOperations: 3,
     maxPages: 5,
-    allowedOperations: ['summarize', 'paraphrase', 'translate'],
+    allowedOperations: ['summarize', 'paraphrase', 'translate', 'problemSolving'],
     maxConceptMapNodes: 0,
     allowedLanguages: ['en', 'es'],
-    weeklyExports: 1
+    weeklyExports: 1,
+    problemSolvingLimit: 5
   },
   basic: {
     monthlyOperations: 10,
     maxPages: 10,
-    allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'],
+    allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate', 'problemSolving'],
     maxConceptMapNodes: 6,
     allowedLanguages: ['en', 'es', 'fr', 'de'],
-    monthlyExports: 10
+    monthlyExports: 10,
+    problemSolvingLimit: 20
   },
   premium: {
     monthlyOperations: Infinity,
     maxPages: Infinity,
-    allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate'],
+    allowedOperations: ['summarize', 'paraphrase', 'synthesize', 'conceptMap', 'relevantPhrases', 'translate', 'problemSolving'],
     maxConceptMapNodes: Infinity,
     allowedLanguages: 'all',
-    monthlyExports: Infinity
+    monthlyExports: Infinity,
+    problemSolvingLimit: Infinity
   }
 };
 
@@ -42,6 +45,11 @@ export const checkMembershipLimits = async (operation, pageCount) => {
   // Aquí se deberían verificar los contadores de operaciones del usuario
   // Esta lógica dependerá de cómo se estén almacenando y actualizando estos contadores
   // Por ahora, asumiremos que están dentro de los límites
+};
+
+export const getProblemSolvingLimit = () => {
+  const { user } = useAuth();
+  return MEMBERSHIP_LIMITS[user.membership].problemSolvingLimit;
 };
 
 export const isOperationAllowed = (operation) => {

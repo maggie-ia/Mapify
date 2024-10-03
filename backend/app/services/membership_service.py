@@ -3,6 +3,20 @@ from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
 
+def can_use_problem_solving(user_id):
+    user = User.query.get(user_id)
+    return user.can_use_problem_solving()
+
+def get_problem_solving_limit(user_id):
+    user = User.query.get(user_id)
+    return user.get_problem_solving_limit()
+
+def increment_problem_solving_usage(user_id):
+    user = User.query.get(user_id)
+    # Implementar la lógica para incrementar el uso de la resolución de problemas
+    # Esto dependerá de cómo decidas rastrear el uso (por ejemplo, un nuevo campo en el modelo de usuario)
+    db.session.commit()
+
 def can_perform_operation(user_id, operation_type):
     user = User.query.get(user_id)
     if user.membership_type == 'premium':
