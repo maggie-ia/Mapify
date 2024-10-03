@@ -31,6 +31,8 @@ class User(db.Model):
     refresh_token_jti = db.Column(db.String(64))
     email_verification_token = db.Column(db.String(64))
     email_verification_sent_at = db.Column(db.DateTime)
+    reset_token = db.Column(db.String(64))
+    reset_token_expiration = db.Column(db.DateTime)
 
     def get_max_file_size(self):
         if self.membership_type == 'premium':
@@ -94,6 +96,12 @@ class User(db.Model):
         if not any(char in "!@#$%^&*(),.?\":{}|<>" for char in password):
             return False
         return True
+
+    def generate_reset_token(self):
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
+        db.session.commit()
+        return self.reset_token
 
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
