@@ -79,7 +79,7 @@ const FileUpload = ({ onFileUploaded }) => {
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
-        const allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        const allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
         const maxSize = getFileSizeLimit(user.membership_type);
         
         if (selectedFile && allowedTypes.includes(selectedFile.type)) {
@@ -115,6 +115,7 @@ const FileUpload = ({ onFileUploaded }) => {
                 setIsUploading(false);
                 setFile(null);
                 setWarning('');
+                localStorage.setItem('uploadedFile', file);
                 toast.success(translations[language].uploadSuccess);
             } catch (error) {
                 setError(error.message || translations[language].uploadError);

@@ -30,6 +30,21 @@ export const extractRelevantPhrases = async (text, pageCount) => processText({ o
 export const translateText = async (text, targetLanguage, pageCount) => 
   processText({ operation: 'translate', text, targetLanguage, pageCount });
 
+export const solveProblemFromFile = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axios.post(`${API_URL}/solve-problem`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return { ...response.data, operationType: 'problemSolving' };
+  } catch (error) {
+    return handleApiError(error, 'Error solving problem');
+  }
+};
+
 export const getWritingAssistance = async ({ text, membershipType }) => {
   try {
     const response = await axios.post(`${API_URL}/writing-assistance`, { text, membershipType });

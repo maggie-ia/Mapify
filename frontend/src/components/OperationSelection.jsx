@@ -39,6 +39,7 @@ const OperationSelection = () => {
         conceptMap: 'Mapa Conceptual',
         relevantPhrases: 'Frases Relevantes',
         translate: 'Traducir',
+        problemSolving: 'Resolver Problemas',
         writingAssistant: 'Asistente de Escritura'
       },
       upgradeMessage: 'Actualiza tu membresía para acceder a esta función',
@@ -54,6 +55,7 @@ const OperationSelection = () => {
         conceptMap: 'Concept Map',
         relevantPhrases: 'Relevant Phrases',
         translate: 'Translate',
+        problemSolving: 'Solve Problems',
         writingAssistant: 'Writing Assistant'
       },
       upgradeMessage: 'Upgrade your membership to access this feature',
@@ -69,6 +71,7 @@ const OperationSelection = () => {
         conceptMap: 'Carte Conceptuelle',
         relevantPhrases: 'Phrases Pertinentes',
         translate: 'Traduire',
+        problemSolving: 'Résoudre des Problèmes',
         writingAssistant: 'Assistant d\'écriture'
       },
       upgradeMessage: 'Mettez à niveau votre adhésion pour accéder à cette fonctionnalité',
@@ -90,9 +93,33 @@ const OperationSelection = () => {
     },
   });
 
+  const solveProblemMutation = useMutation({
+    mutationFn: solveProblemFromFile,
+    onSuccess: (result) => {
+      setIsProcessing(false);
+      navigate('/results', { state: { result, operationType: 'problemSolving' } });
+    },
+    onError: (error) => {
+      setIsProcessing(false);
+      console.error('Error solving problem:', error);
+      toast.error(`Error: ${error.message || 'An unexpected error occurred'}`);
+    },
+  });
+
   const handleOperationSelect = (operation) => {
     if (operation === 'writingAssistant') {
       navigate('/writing-assistant');
+      return;
+    }
+
+    if (operation === 'problemSolving') {
+      const file = localStorage.getItem('uploadedFile');
+      if (!file) {
+        toast.error('No file uploaded. Please upload a document first.');
+        return;
+      }
+      setIsProcessing(true);
+      solveProblemMutation.mutate(file);
       return;
     }
 
@@ -101,6 +128,7 @@ const OperationSelection = () => {
       toast.error('No text uploaded. Please upload a document first.');
       return;
     }
+
     const pageCount = text.split(/\r\n|\r|\n/).length / 25; // Estimación aproximada de páginas
     setIsProcessing(true);
     processTextMutation.mutate(

@@ -4,7 +4,6 @@ import spacy
 import PyPDF2
 from io import BytesIO
 import docx
-<<<<<<< HEAD
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import spacy
@@ -23,13 +22,6 @@ summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('en-US')
-=======
-
-summarizer = pipeline("summarization")
-nlp = spacy.load("es_core_news_sm")
->>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
-
-# ... keep existing code (extract_text_from_pdf, extract_text_from_docx, process_file, summarize_text)
 
 def identify_problems(text):
     """
@@ -53,22 +45,81 @@ def identify_problems(text):
 
 def solve_problem(problem):
     """
-    Intenta resolver un problema matemático, físico o químico.
+    Resuelve un problema matemático, físico o químico ofreciendo múltiples métodos.
     """
-    # Esta es una implementación básica. En un sistema real, se utilizaría
-    # un motor de resolución de problemas más avanzado.
-    return f"Para resolver el problema '{problem}', se recomienda seguir estos pasos:\n" \
-           f"1. Identificar las variables y datos conocidos.\n" \
-           f"2. Determinar la fórmula o ecuación apropiada.\n" \
-           f"3. Sustituir los valores conocidos en la ecuación.\n" \
-           f"4. Resolver la ecuación para encontrar la incógnita.\n" \
-           f"5. Verificar que la solución tenga sentido en el contexto del problema."
+    methods = [
+        ("Método analítico", solve_problem_analytical(problem)),
+        ("Método numérico", solve_problem_numerical(problem)),
+        ("Método gráfico", solve_problem_graphical(problem))
+    ]
+    
+    step_by_step = explain_problem(problem)
+    resources = get_additional_resources(problem)
+    
+    return {
+        "methods": methods,
+        "step_by_step": step_by_step,
+        "resources": resources
+    }
+
+def solve_problem_analytical(problem):
+    # Implementar método analítico
+    return "Solución analítica del problema utilizando ecuaciones y fórmulas matemáticas."
+
+def solve_problem_numerical(problem):
+    # Implementar método numérico
+    return "Solución numérica del problema utilizando algoritmos computacionales."
+
+def solve_problem_graphical(problem):
+    # Implementar método gráfico
+    return "Solución gráfica del problema utilizando representaciones visuales."
+
+def explain_problem(problem):
+    """
+    Proporciona una explicación detallada paso a paso de cómo abordar un problema.
+    """
+    steps = [
+        "Paso 1: Identificar las variables y datos conocidos del problema.",
+        f"En este problema, las variables identificadas son: [lista de variables]",
+        "Paso 2: Determinar qué se está pidiendo calcular o encontrar.",
+        f"El objetivo es: [objetivo del problema]",
+        "Paso 3: Seleccionar la fórmula o método apropiado para resolver el problema.",
+        f"Para este problema, utilizaremos: [fórmula o método seleccionado]",
+        "Paso 4: Aplicar el método seleccionado, mostrando cada paso del cálculo.",
+        f"[Detalles de los cálculos paso a paso]",
+        "Paso 5: Verificar que la solución tenga sentido en el contexto del problema.",
+        f"[Verificación de la solución]",
+        "Paso 6: Interpretar el resultado y formular una conclusión.",
+        f"[Interpretación y conclusión]"
+    ]
+    
+    return "\n".join(steps)
+
+def get_additional_resources(problem):
+    """
+    Proporciona recursos adicionales relacionados con el problema.
+    """
+    # En una implementación real, esto podría ser una llamada a una base de datos o API
+    resources = [
+        {
+            "title": "Khan Academy - Resolución de problemas",
+            "url": "https://es.khanacademy.org/math/arithmetic/multiplication-division"
+        },
+        {
+            "title": "Wolfram Alpha - Calculadora y solucionador de problemas",
+            "url": "https://www.wolframalpha.com/"
+        },
+        {
+            "title": "MIT OpenCourseWare - Métodos de resolución de problemas",
+            "url": "https://ocw.mit.edu/courses/mathematics/"
+        }
+    ]
+    return resources
 
 def explain_problem(problem):
     """
     Proporciona una explicación detallada de cómo abordar un problema.
     """
-<<<<<<< HEAD
     summary = summarize_text(text, max_length=max_length, min_length=min_length)
     synthesis = paraphrase_text(summary, max_length=max_length)
     return synthesis
@@ -177,8 +228,6 @@ def explain_problem(problem):
     """
     Proporciona una explicación detallada de cómo abordar un problema.
     """
-=======
->>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
     return f"Para entender y resolver el problema '{problem}', considera lo siguiente:\n" \
            f"1. Contexto: Identifica el área de estudio (matemáticas, física, química) y los conceptos relevantes.\n" \
            f"2. Datos: Enumera toda la información proporcionada en el enunciado del problema.\n" \
