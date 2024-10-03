@@ -55,60 +55,33 @@ const FileUpload = ({ onFileUploaded }) => {
             uploadSuccess: 'Fichier téléchargé avec succès',
             uploadError: 'Erreur lors du téléchargement du fichier',
         }
-    };
+    }
 
     useEffect(() => {
         validateFile();
     }, [file]);
-<<<<<<< HEAD
-    
-    const validateFile = async () => {
-        if (!file) {
-            setIsValid(false);
-            setError('');
-=======
 
     const validateFile = async () => {
         if (!file) {
             setIsValid(false);
->>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
             return;
         }
 
         try {
             await fileUploadSchema.validate({ file });
             setIsValid(true);
-<<<<<<< HEAD
-            setError('');
-        } catch (err) {
-            setIsValid(false);
-            setError(err.message);
-        }
-    };
-
-    const getFileSizeLimit = (membershipType) => {
-        switch (membershipType) {
-            case 'premium':
-                return 50 * 1024 * 1024; // 50MB for premium
-            case 'basic':
-            case 'free':
-            default:
-                return 16 * 1024 * 1024; // 16MB for basic and free
-=======
         } catch (err) {
             setIsValid(false);
             addNotification('error', err.message);
->>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
         }
     };
-
+    
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         setFile(selectedFile);
     };
 
     const handleUpload = async () => {
-<<<<<<< HEAD
         if (file) {
             setIsUploading(true);
             setProgress(0);
@@ -125,27 +98,8 @@ const FileUpload = ({ onFileUploaded }) => {
                 setIsUploading(false);
                 toast.error(error.message || translations[language].uploadError);
             }
-=======
-        if (!isValid) return;
-
-        setIsUploading(true);
-        setProgress(0);
-        try {
-            const response = await uploadFile(file, (progress) => {
-                setProgress(progress);
-            });
-            onFileUploaded(response);
-            setIsUploading(false);
-            setFile(null);
-            addNotification('success', translations[language].uploadSuccess);
-        } catch (error) {
-            setIsUploading(false);
-            addNotification('error', error.message || translations[language].uploadError);
->>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
         }
     };
-
-
 
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
@@ -156,10 +110,7 @@ const FileUpload = ({ onFileUploaded }) => {
                 accept=".pdf,.txt,.docx"
                 className="mb-4"
             />
-<<<<<<< HEAD
             {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
-=======
->>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}

@@ -2,16 +2,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-from config import Config
-<<<<<<< HEAD
+from .config import Config
+from .utils.logger import setup_logger
+from .utils.error_handler import setup_error_handlers
 import logging
-from logging.handlers import RotatingFileHandler
 from .config.logging_config import setup_logging
-import os
-=======
-from .config.logging_config import setup_logging
-import logging
->>>>>>> 8f943cf430b39bb7c6bca67caaabf5cf2dbf455c
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -25,9 +20,13 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+    setup_logger(app)
+    setup_error_handlers(app)
     setup_logging(app)
 
-    from app.routes import main, auth, text_processing, membership, chat
+    from .routes import bp as main_bp
+    from .routes import main, auth, text_processing, membership, chat
+    app.register_blueprint(main_bp)
     app.register_blueprint(main)
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(text_processing, url_prefix='/api')
@@ -40,4 +39,4 @@ def create_app(config_class=Config):
 
     return app
 
-from app import models
+from . import models
