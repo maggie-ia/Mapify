@@ -1,5 +1,12 @@
 import logging
-from app.utils.exceptions import *
+from app.utils.exceptions import (
+    SummarizationError,
+    ParaphraseError,
+    SynthesisError,
+    RelevantPhrasesError,
+    TranslationError,
+    ConceptMapError
+)
 import re
 import base64
 from io import BytesIO
