@@ -12,41 +12,64 @@ import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
 
 logger = logging.getLogger(__name__)
 
-def authenticate_user(email, password):
-    try:
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            if user.two_factor_enabled:
-                return {'requires_2fa': True, 'user_id': user.id}
-            access_token = create_access_token(identity=user.id)
-            refresh_token = create_refresh_token(identity=user.id)
-            log_user_activity(user.id, 'login')
-            return {'access_token': access_token, 'refresh_token': refresh_token}
-        else:
-            raise AuthenticationError("Credenciales inválidas")
-    except Exception as e:
-        logger.error(f"Error de autenticación: {str(e)}")
-        raise AuthenticationError("Error durante la autenticación")
+# Inicializar Firebase Admin SDK
+cred = credentials.Certificate({
+    "type": "service_account",
+    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
+    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL")
+})
+firebase_admin.initialize_app(cred)
 
-def register_user(username, email, password):
+def verify_firebase_token(token):
+    try:
+        decoded_token = firebase_auth.verify_id_token(token)
+        uid = decoded_token['uid']
+        user = User.query.filter_by(firebase_uid=uid).first()
+        if not user:
+            # Si el usuario no existe en nuestra base de datos, lo creamos
+            email = decoded_token.get('email')
+            username = decoded_token.get('name', email.split('@')[0])
+            user = register_user(username, email, None, uid)
+        
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+        log_user_activity(user.id, 'login')
+        return {'access_token': access_token, 'refresh_token': refresh_token}
+    except Exception as e:
+        logger.error(f"Error de autenticación con Firebase: {str(e)}")
+        raise AuthenticationError("Error durante la autenticación con Firebase")
+
+def register_user(username, email, password=None, firebase_uid=None):
     try:
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             raise AuthenticationError("El correo electrónico ya está registrado")
         
-        if not is_password_secure(password):
+        if password and not is_password_secure(password):
             raise AuthenticationError("La contraseña no cumple con los requisitos de seguridad")
 
-        new_user = User(username=username, email=email)
-        new_user.set_password(password)
+        new_user = User(username=username, email=email, firebase_uid=firebase_uid)
+        if password:
+            new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
 
-        verification_token = new_user.generate_email_verification_token()
-        send_verification_email(new_user.email, verification_token)
+        if not firebase_uid:
+            verification_token = new_user.generate_email_verification_token()
+            send_verification_email(new_user.email, verification_token)
 
         log_user_activity(new_user.id, 'register')
         return new_user
