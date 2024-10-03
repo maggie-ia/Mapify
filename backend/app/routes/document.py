@@ -1,44 +1,113 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint, request, jsonify, send_file, current_app
+from werkzeug.utils import secure_filename
 from app.models.document import Document
 from app.models.user import User
 from app import db
-from werkzeug.utils import secure_filename
+from app.utils.file_validators import validate_file_type, validate_file_size
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.services.membership_service import get_page_limit
+from app.services.text_processing import (
+    summarize_text, paraphrase_text, synthesize_text,
+    extract_relevant_phrases, generate_concept_map, translate_text
+)
 import os
+from io import BytesIO
+import PyPDF2
+import docx
 
 document_bp = Blueprint('document', __name__)
 
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 @document_bp.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_document():
     if 'file' not in request.files:
-        return jsonify({"message": "No file part"}), 400
+        return jsonify({"error": "No se ha proporcionado ningún archivo"}), 400
+    
     file = request.files['file']
+    
     if file.filename == '':
-        return jsonify({"message": "No selected file"}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(os.getenv('UPLOAD_FOLDER'), filename)
-        file.save(file_path)
-        
-        ocr_text = request.form.get('ocrText', '')
-        
-        new_document = Document(
-            filename=filename,
-            content=ocr_text if ocr_text else file.read().decode('utf-8'),
-            user_id=get_jwt_identity(),
-            file_type=filename.rsplit('.', 1)[1].lower()
-        )
-        db.session.add(new_document)
-        db.session.commit()
-        
-        return jsonify({"message": "File uploaded successfully", "document_id": new_document.id}), 201
-    return jsonify({"message": "File type not allowed"}), 400
+        return jsonify({"error": "No se ha seleccionado ningún archivo"}), 400
+    
+    try:
+        validate_file_type(file.filename, ALLOWED_EXTENSIONS)
+        validate_file_size(file, MAX_FILE_SIZE)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    user_id = get_jwt_identity()
+    page_limit = get_page_limit(user_id)
+    
+    page_count = count_pages(file)
+    
+    if page_count > page_limit:
+        return jsonify({"error": f"El documento excede el límite de {page_limit} páginas para su nivel de membresía"}), 403
+
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    content = extract_text(file_path)
+    document = Document(filename=filename, file_path=file_path, user_id=user_id, content=content)
+    db.session.add(document)
+    db.session.commit()
+
+    return jsonify({"message": "Archivo subido exitosamente", "document_id": document.id}), 201
+
+
+def count_pages(file):
+    file.seek(0)
+    if file.filename.endswith('.pdf'):
+        reader = PyPDF2.PdfReader(file)
+        return len(reader.pages)
+    elif file.filename.endswith('.docx'):
+        doc = docx.Document(file)
+        return len(doc.paragraphs)
+    elif file.filename.endswith('.txt'):
+        return sum(1 for line in file)
+    else:
+        return 1  # Default to 1 page for unsupported formats
+
+def extract_text(file_path):
+    if file_path.endswith('.pdf'):
+        with open(file_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            return " ".join(page.extract_text() for page in reader.pages)
+    elif file_path.endswith('.docx'):
+        doc = docx.Document(file_path)
+        return " ".join(paragraph.text for paragraph in doc.paragraphs)
+    elif file_path.endswith('.txt'):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    else:
+        return ""  # Return empty string for unsupported formats
+
+@document_bp.route('/<int:document_id>', methods=['GET'])
+@jwt_required()
+def get_document(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"error": "Acceso no autorizado"}), 403
+    return jsonify({"id": document.id, "filename": document.filename, "created_at": document.created_at}), 200
+
+@document_bp.route('/<int:document_id>', methods=['DELETE'])
+@jwt_required()
+def delete_document(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != get_jwt_identity():
+        return jsonify({"error": "Acceso no autorizado"}), 403
+    db.session.delete(document)
+    db.session.commit()
+    return jsonify({"message": "Documento eliminado exitosamente"}), 200
+
+@document_bp.route('/user', methods=['GET'])
+@jwt_required()
+def get_user_documents():
+    user_id = get_jwt_identity()
+    documents = Document.query.filter_by(user_id=user_id).all()
+    return jsonify([{"id": doc.id, "filename": doc.filename, "created_at": doc.created_at} for doc in documents]), 20
 
 @document_bp.route('/list', methods=['GET'])
 @jwt_required()

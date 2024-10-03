@@ -1,6 +1,7 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+import logging
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +21,14 @@ class User(db.Model):
     is_trial = db.Column(db.Boolean, default=False)
     chat_usage_count = db.Column(db.Integer, default=0)
     chat_usage_reset = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def get_max_file_size(self):
+        if self.membership_type == 'premium':
+            return 50 * 1024 * 1024  # 50 MB
+        elif self.membership_type == 'basic':
+            return 20 * 1024 * 1024  # 20 MB
+        else:
+            return 5 * 1024 * 1024  # 5 MB
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -67,7 +76,6 @@ class User(db.Model):
         else:  # free
             return self.weekly_operations < 3
 
-<<<<<<< HEAD
     def can_use_chat(self):
         self._reset_chat_usage_if_needed()
         if self.membership_type == 'premium':
@@ -150,12 +158,12 @@ class User(db.Model):
         else:  # free
             return language in ['en', 'es']
     
+    def log_error(self, error_message):
+        logger = logging.getLogger('mapify_error_logger')
+        logger.error(f"User {self.id} - {error_message}")   
+    
     def can_use_problem_solving(self):
             return True  # Disponible para todas las membresías   
-=======
-    def can_use_problem_solving(self):
-        return True  # Disponible para todas las membresías
->>>>>>> 40925bab8e4b169bad3baf574ac6f39a85827e3c
 
     def get_membership_info(self):
         self._reset_counters_if_needed()
@@ -172,30 +180,18 @@ class User(db.Model):
             'page_limit': self.get_page_limit(),
             'can_create_concept_maps': self.membership_type != 'free' or self.is_trial,
             'concept_map_node_limit': float('inf') if self.membership_type == 'premium' or self.is_trial else 6 if self.membership_type == 'basic' else 0,
-<<<<<<< HEAD
             'chat_usage_remaining': self.get_chat_usage_remaining(),
-=======
->>>>>>> 40925bab8e4b169bad3baf574ac6f39a85827e3c
             'can_use_problem_solving': self.can_use_problem_solving(),
             'problem_solving_limit': self.get_problem_solving_limit()
         }
 
     def get_problem_solving_limit(self):
-<<<<<<< HEAD
             if self.is_trial or self.membership_type == 'premium':
                 return float('inf')  # Sin límite
             elif self.membership_type == 'basic':
                 return 20  # 20 usos por mes
             else:  # free
                 return 5   # 5 usos por semana
-=======
-        if self.is_trial or self.membership_type == 'premium':
-            return float('inf')  # Sin límite
-        elif self.membership_type == 'basic':
-            return 20  # 20 usos por mes
-        else:  # free
-            return 5   # 5 usos por semana
->>>>>>> 40925bab8e4b169bad3baf574ac6f39a85827e3c
 
     def get_weekly_operations_remaining(self):
         if self.is_trial or self.membership_type == 'premium':

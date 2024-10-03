@@ -1,56 +1,41 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
+import { X } from "lucide-react";
 
-const Notifications = () => {
+const Notification = ({ type, message, onClose }) => {
     const { language } = useLanguage();
 
     const translations = {
         es: {
-            title: 'Notificaciones',
-            noNotifications: 'No hay notificaciones nuevas.'
+            error: 'Error',
+            success: 'Éxito',
+            info: 'Información',
+            warning: 'Advertencia'
         },
         en: {
-            title: 'Notifications',
-            noNotifications: 'No new notifications.'
+            error: 'Error',
+            success: 'Success',
+            info: 'Information',
+            warning: 'Warning'
         },
         fr: {
-            title: 'Notifications',
-            noNotifications: 'Pas de nouvelles notifications.'
+            error: 'Erreur',
+            success: 'Succès',
+            info: 'Information',
+            warning: 'Avertissement'
         }
     };
 
-    const { data: notifications, isLoading, error } = useQuery({
-        queryKey: ['notifications'],
-        queryFn: async () => {
-            const response = await axios.get('/api/notifications');
-            return response.data;
-        },
-    });
-
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
-
     return (
-        <Card className="w-full max-w-md mx-auto mt-8">
-            <CardHeader>
-                <CardTitle>{translations[language].title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {notifications && notifications.length > 0 ? (
-                    <ul>
-                        {notifications.map((notification, index) => (
-                            <li key={index} className="mb-2">{notification}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p>{translations[language].noNotifications}</p>
-                )}
-            </CardContent>
-        </Card>
+        <Alert variant={type} className="mb-4">
+            <AlertTitle className="flex justify-between items-center">
+                {translations[language][type]}
+                <X className="cursor-pointer" onClick={onClose} />
+            </AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+        </Alert>
     );
 };
 
-export default Notifications;
+export default Notification;
