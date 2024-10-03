@@ -26,6 +26,9 @@ const AIChat = ({ documentId }) => {
     const [inputMessage, setInputMessage] = useState('');
     const [operation, setOperation] = useState('chat');
     const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+    const [tags, setTags] = useState([]);
+    const [feedback, setFeedback] = useState(null);
+    const [grammarMode, setGrammarMode] = useState(false);
     const { user } = useAuth();
     const { language } = useLanguage();
 
@@ -101,6 +104,7 @@ const AIChat = ({ documentId }) => {
     useEffect(() => {
         if (chatData) {
             setMessages(chatData.messages);
+            setTags(chatData.tags || []);
         }
     }, [chatData]);
 
@@ -130,13 +134,14 @@ const AIChat = ({ documentId }) => {
             sendMessageMutation.mutate({ 
                 message: encryptedMessage, 
                 operation,
-                documentContext: chatData?.summary
+                documentContext: chatData?.summary,
+                grammarMode
             });
         } else {
             reportSuspiciousActivity(user.id, { action: 'invalid_input', input: inputMessage });
             toast.error('Entrada inválida detectada. Por favor, intenta de nuevo.');
         }
-    }, 300), [inputMessage, operation, chatData, user.id]);
+    }, 300), [inputMessage, operation, chatData, user.id, grammarMode]);
 
     const handleFeedback = useCallback((messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
@@ -178,6 +183,11 @@ const AIChat = ({ documentId }) => {
             .catch(() => toast.error('Error adding tag'));
     }, [documentId, user.id]);
 
+    const toggleGrammarMode = () => {
+        setGrammarMode(!grammarMode);
+        toast.success(`Grammar mode ${grammarMode ? 'disabled' : 'enabled'}`);
+    };
+
     if (user.membership_type !== 'premium') {
         return <p className="text-quaternary">El chat de IA solo está disponible para usuarios premium.</p>;
     }
@@ -188,78 +198,23 @@ const AIChat = ({ documentId }) => {
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
             <OperationSelector operation={operation} setOperation={setOperation} />
-            <ChatMessages messages={messages} />
+            <ChatMessages 
+                messages={messages} 
+                handleFeedback={handleFeedback}
+                grammarMode={grammarMode}
+            />
             <SuggestedQuestions questions={suggestedQuestions} setInputMessage={setInputMessage} />
             <ChatInput 
                 inputMessage={inputMessage} 
                 setInputMessage={setInputMessage} 
                 handleSendMessage={handleSendMessage} 
                 isLoading={sendMessageMutation.isLoading}
+                grammarMode={grammarMode}
+                toggleGrammarMode={toggleGrammarMode}
             />
-            {operation === 'problemSolving' && (
-                <ProblemSolvingResults results={messages[messages.length - 1]?.content} />
-            )}
             <ChatPersonalization />
-            <Select onValueChange={setOperation} defaultValue={operation}>
-                <SelectTrigger className="w-full mb-4">
-                    <SelectValue placeholder={translations[language].selectOperation} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="chat">{translations[language].chat}</SelectItem>
-                    <SelectItem value="summarize">{translations[language].summarize}</SelectItem>
-                    <SelectItem value="paraphrase">{translations[language].paraphrase}</SelectItem>
-                    <SelectItem value="synthesize">{translations[language].synthesize}</SelectItem>
-                    <SelectItem value="relevantPhrases">{translations[language].relevantPhrases}</SelectItem>
-                    <SelectItem value="conceptMap">{translations[language].conceptMap}</SelectItem>
-                    <SelectItem value="translate">{translations[language].translate}</SelectItem>
-                </SelectContent>
-            </Select>
-            <ScrollArea className="h-80 mb-4">
-                {messages.map((msg, index) => (
-                    <div key={index} className={`mb-2 p-2 rounded ${msg.sender === 'user' ? 'bg-tertiary text-white' : 'bg-secondary'}`}>
-                        {msg.content}
-                        {msg.sender === 'ai' && (
-                            <div className="mt-2">
-                                <Button onClick={() => handleFeedback(index, true)} className="mr-2">
-                                    {translations[language].feedbackPositive}
-                                </Button>
-                                <Button onClick={() => handleFeedback(index, false)}>
-                                    {translations[language].feedbackNegative}
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                ))}
-                {messages.length > 0 && messages[messages.length - 1].operation === 'relevantPhrases' && (
-                    <RelevantPhrases phrases={messages[messages.length - 1].content} />
-                )}
-                {messages.length > 0 && messages[messages.length - 1].operation === 'conceptMap' && (
-                    <ConceptMap conceptMapImage={messages[messages.length - 1].content} />
-                )}
-            </ScrollArea>
-            {suggestedQuestions.length > 0 && (
-                <div className="mb-4">
-                    <p className="font-bold">{translations[language].suggestedQuestions}</p>
-                    {suggestedQuestions.map((question, index) => (
-                        <Button key={index} onClick={() => setInputMessage(question)} className="mr-2 mb-2">
-                            {question}
-                        </Button>
-                    ))}
-                </div>
-            )}
-            <div className="flex mb-4">
-                <Input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder={translations[language].placeholder}
-                    className="flex-grow mr-2"
-                />
-                <Button onClick={handleSendMessage} disabled={sendMessageMutation.isLoading}>
-                    {translations[language].send}
-                </Button>
-            </div>
-            <div className="flex justify-between mb-4">
+            <TagManager tags={tags} onAddTag={handleAddTag} />
+            <div className="flex justify-between mt-4">
                 <Button onClick={handleSaveConversation}>
                     {translations[language].saveConversation}
                 </Button>
@@ -267,8 +222,6 @@ const AIChat = ({ documentId }) => {
                     {translations[language].loadConversation}
                 </Button>
             </div>
-            <TagManager tags={tags} onAddTag={handleAddTag} />
-            <ConversationCategories />
         </div>
     );
 };

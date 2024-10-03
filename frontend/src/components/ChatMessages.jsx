@@ -3,21 +3,24 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 import { useLanguage } from '../contexts/LanguageContext';
 
-const ChatMessages = ({ messages, handleProblemSolving, handleExplainProblem }) => {
+const ChatMessages = ({ messages, handleFeedback, grammarMode }) => {
     const { language } = useLanguage();
 
     const translations = {
         es: {
-            problemSolving: "Resolver problema",
-            explainProblem: "Explicar problema",
+            feedbackPositive: "¿Fue útil esta respuesta?",
+            feedbackNegative: "¿No fue útil esta respuesta?",
+            grammarCorrection: "Corrección gramatical:"
         },
         en: {
-            problemSolving: "Solve problem",
-            explainProblem: "Explain problem",
+            feedbackPositive: "Was this response helpful?",
+            feedbackNegative: "Was this response not helpful?",
+            grammarCorrection: "Grammar correction:"
         },
         fr: {
-            problemSolving: "Résoudre le problème",
-            explainProblem: "Expliquer le problème",
+            feedbackPositive: "Cette réponse était-elle utile ?",
+            feedbackNegative: "Cette réponse n'était-elle pas utile ?",
+            grammarCorrection: "Correction grammaticale :"
         }
     };
 
@@ -26,18 +29,24 @@ const ChatMessages = ({ messages, handleProblemSolving, handleExplainProblem }) 
             {messages.map((msg, index) => (
                 <div key={index} className={`mb-2 p-2 rounded ${msg.sender === 'user' ? 'bg-tertiary text-white' : 'bg-secondary'}`}>
                     {msg.content}
-                    {msg.sender === 'ai' && msg.problems && (
+                    {msg.sender === 'ai' && (
                         <div className="mt-2">
-                            {msg.problems.map((problem, problemIndex) => (
-                                <div key={problemIndex} className="mt-1">
-                                    <Button onClick={() => handleProblemSolving(problem)} className="mr-2">
-                                        {translations[language].problemSolving}
-                                    </Button>
-                                    <Button onClick={() => handleExplainProblem(problem)}>
-                                        {translations[language].explainProblem}
-                                    </Button>
-                                </div>
-                            ))}
+                            <Button onClick={() => handleFeedback(index, true)} className="mr-2">
+                                {translations[language].feedbackPositive}
+                            </Button>
+                            <Button onClick={() => handleFeedback(index, false)}>
+                                {translations[language].feedbackNegative}
+                            </Button>
+                        </div>
+                    )}
+                    {grammarMode && msg.grammarCorrections && (
+                        <div className="mt-2 text-sm text-quaternary">
+                            <p>{translations[language].grammarCorrection}</p>
+                            <ul>
+                                {msg.grammarCorrections.map((correction, i) => (
+                                    <li key={i}>{correction}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>

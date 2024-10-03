@@ -11,10 +11,12 @@ from .text_processing import identify_problems, solve_problem, explain_problem
 import pytesseract
 from pdf2image import convert_from_path
 import docx2txt
+import language_tool_python
 
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 nlp = spacy.load("es_core_news_sm")
+grammar_tool = language_tool_python.LanguageTool('es')
 
 @lru_cache(maxsize=100)
 def process_ai_response(document_content, user_question, operation, embeddings):
@@ -47,7 +49,10 @@ def process_ai_response(document_content, user_question, operation, embeddings):
         print(f"Error processing AI response: {str(e)}")
         return "Lo siento, no pude procesar tu solicitud. Por favor, intenta reformularla."
 
-# ... keep existing code (summarize_text, paraphrase_text, synthesize_text, generate_relevant_phrases, generate_concept_map, translate_text, generate_suggested_questions)
+def check_grammar(text):
+    matches = grammar_tool.check(text)
+    return [str(error) for error in matches]
+
 
 def solve_problem_enhanced(problem):
     """
@@ -186,3 +191,4 @@ def extract_text_from_file(file_path):
 def solve_problem_from_file(file_path):
     content = extract_text_from_file(file_path)
     return solve_problem_auto(content)
+
