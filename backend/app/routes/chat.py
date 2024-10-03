@@ -6,7 +6,7 @@ from app.models.chat_conversation import ChatConversation
 from app.models.conversation_category import ConversationCategory
 from app import db
 from app.services.ai_service import (
-    process_ai_response, generate_suggested_questions
+    process_ai_response, generate_suggested_questions, check_grammar
 )
 from app.services.membership_service import can_perform_operation, increment_operation
 
@@ -43,6 +43,7 @@ def send_chat_message(document_id):
     data = request.json
     message = data.get('message')
     operation = data.get('operation', 'chat')
+    grammar_mode = data.get('grammarMode', False)
     
     if not message:
         return jsonify({"error": "No message provided"}), 400
@@ -62,6 +63,11 @@ def send_chat_message(document_id):
     try:
         ai_response = process_ai_response(document.content, message, operation, document.embeddings)
         ai_message = {"sender": "ai", "content": ai_response, "operation": operation}
+        
+        if grammar_mode:
+            grammar_corrections = check_grammar(message)
+            ai_message["grammarCorrections"] = grammar_corrections
+        
         conversation.conversation_data.append(ai_message)
         db.session.commit()
         

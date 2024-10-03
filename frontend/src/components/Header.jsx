@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 
 const Header = () => {
   const { language } = useLanguage();
@@ -36,6 +37,7 @@ const Header = () => {
           <li><Link to="/results" className="hover:text-tertiary transition-colors">{translations[language].results}</Link></li>
           <li><Link to="/settings" className="hover:text-tertiary transition-colors">{translations[language].settings}</Link></li>
         </ul>
+        <LanguageSelector />
       </nav>
     </header>
   );

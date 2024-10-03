@@ -11,10 +11,12 @@ from .text_processing import identify_problems, solve_problem, explain_problem
 import pytesseract
 from pdf2image import convert_from_path
 import docx2txt
+import language_tool_python
 
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 nlp = spacy.load("es_core_news_sm")
+grammar_tool = language_tool_python.LanguageTool('es')
 
 @lru_cache(maxsize=100)
 def process_ai_response(document_content, user_question, operation, embeddings):
@@ -46,8 +48,48 @@ def process_ai_response(document_content, user_question, operation, embeddings):
     except Exception as e:
         print(f"Error processing AI response: {str(e)}")
         return "Lo siento, no pude procesar tu solicitud. Por favor, intenta reformularla."
+    
+def summarize_text(text, max_length=150, min_length=50):
+    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
+    return summary[0]['summary_text']
 
-# ... keep existing code (summarize_text, paraphrase_text, synthesize_text, generate_relevant_phrases, generate_concept_map, translate_text, generate_suggested_questions)
+def paraphrase_text(text):
+    # Implementar la lógica de paráfrasis aquí
+    return f"Paráfrasis de: {text}"
+
+def synthesize_text(text):
+    # Implementar la lógica de síntesis aquí
+    return f"Síntesis de: {text}"
+
+def generate_relevant_phrases(text):
+    # Implementar la lógica para generar frases relevantes
+    return ["Frase relevante 1", "Frase relevante 2", "Frase relevante 3"]
+
+def generate_concept_map(text):
+    # Implementar la lógica para generar un mapa conceptual
+    # Esta es una implementación simplificada
+    G = nx.Graph()
+    G.add_node("Concepto Central")
+    G.add_edge("Concepto Central", "Concepto 1")
+    G.add_edge("Concepto Central", "Concepto 2")
+    
+    plt.figure(figsize=(10, 8))
+    nx.draw(G, with_labels=True, node_color='lightblue', node_size=3000, font_size=10, font_weight='bold')
+    
+    img_buffer = BytesIO()
+    plt.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+    img_str = base64.b64encode(img_buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{img_str}"
+
+def translate_text(text, target_language):
+    translator = GoogleTranslator(source='auto', target=target_language)
+    return translator.translate(text)
+
+def check_grammar(text):
+    matches = grammar_tool.check(text)
+    return [str(error) for error in matches]
 
 def solve_problem_enhanced(problem):
     """

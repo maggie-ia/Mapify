@@ -26,6 +26,9 @@ const AIChat = ({ documentId }) => {
     const [inputMessage, setInputMessage] = useState('');
     const [operation, setOperation] = useState('chat');
     const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+    const [tags, setTags] = useState([]);
+    const [feedback, setFeedback] = useState(null);
+    const [grammarMode, setGrammarMode] = useState(false);
     const { user } = useAuth();
     const { language } = useLanguage();
 
@@ -98,12 +101,6 @@ const AIChat = ({ documentId }) => {
         }
     });
 
-    useEffect(() => {
-        if (chatData) {
-            setMessages(chatData.messages);
-        }
-    }, [chatData]);
-
     const sendMessageMutation = useMutation({
         mutationFn: (data) => axios.post(`/api/chat/${documentId}`, data),
         onSuccess: (data) => {
@@ -130,13 +127,14 @@ const AIChat = ({ documentId }) => {
             sendMessageMutation.mutate({ 
                 message: encryptedMessage, 
                 operation,
-                documentContext: chatData?.summary
+                documentContext: chatData?.summary,
+                grammarMode
             });
         } else {
             reportSuspiciousActivity(user.id, { action: 'invalid_input', input: inputMessage });
             toast.error('Entrada inválida detectada. Por favor, intenta de nuevo.');
         }
-    }, 300), [inputMessage, operation, chatData, user.id]);
+    }, 300), [inputMessage, operation, chatData, user.id, grammarMode]);
 
     const handleFeedback = useCallback((messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
@@ -178,6 +176,18 @@ const AIChat = ({ documentId }) => {
             .catch(() => toast.error('Error adding tag'));
     }, [documentId, user.id]);
 
+    useEffect(() => {
+        if (chatData) {
+            setMessages(chatData.messages);
+            setTags(chatData.tags || []);
+        }
+    }, [chatData]);
+
+    const toggleGrammarMode = () => {
+        setGrammarMode(!grammarMode);
+        toast.success(`Grammar mode ${grammarMode ? 'disabled' : 'enabled'}`);
+    };
+
     if (user.membership_type !== 'premium') {
         return <p className="text-quaternary">El chat de IA solo está disponible para usuarios premium.</p>;
     }
@@ -187,19 +197,34 @@ const AIChat = ({ documentId }) => {
 
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
-            <OperationSelector operation={operation} setOperation={setOperation} />
-            <ChatMessages messages={messages} />
+             <OperationSelector operation={operation} setOperation={setOperation} />
+            <ChatMessages 
+                messages={messages} 
+                handleFeedback={handleFeedback}
+                grammarMode={grammarMode}
+            />
             <SuggestedQuestions questions={suggestedQuestions} setInputMessage={setInputMessage} />
             <ChatInput 
                 inputMessage={inputMessage} 
                 setInputMessage={setInputMessage} 
                 handleSendMessage={handleSendMessage} 
                 isLoading={sendMessageMutation.isLoading}
+                grammarMode={grammarMode}
+                toggleGrammarMode={toggleGrammarMode}
             />
             {operation === 'problemSolving' && (
                 <ProblemSolvingResults results={messages[messages.length - 1]?.content} />
             )}
             <ChatPersonalization />
+            <TagManager tags={tags} onAddTag={handleAddTag} />
+            <div className="flex justify-between mt-4">
+                <Button onClick={handleSaveConversation}>
+                    {translations[language].saveConversation}
+                </Button>
+                <Button onClick={handleLoadConversation}>
+                    {translations[language].loadConversation}
+                </Button>
+            </div>
             <Select onValueChange={setOperation} defaultValue={operation}>
                 <SelectTrigger className="w-full mb-4">
                     <SelectValue placeholder={translations[language].selectOperation} />

@@ -1,37 +1,43 @@
 import React from 'react';
-import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 import { useLanguage } from '../contexts/LanguageContext';
 
-const ChatInput = ({ inputMessage, setInputMessage, handleSendMessage, isLoading }) => {
+const ChatInput = ({ inputMessage, setInputMessage, handleSendMessage, isLoading, grammarMode, toggleGrammarMode }) => {
     const { language } = useLanguage();
 
     const translations = {
         es: {
-            placeholder: 'Escribe tu mensaje aquí...',
-            send: 'Enviar'
+            placeholder: "Escribe tu mensaje aquí...",
+            send: "Enviar",
+            grammarMode: "Modo Gramática"
         },
         en: {
-            placeholder: 'Type your message here...',
-            send: 'Send'
+            placeholder: "Type your message here...",
+            send: "Send",
+            grammarMode: "Grammar Mode"
         },
         fr: {
-            placeholder: 'Écrivez votre message ici...',
-            send: 'Envoyer'
+            placeholder: "Écrivez votre message ici...",
+            send: "Envoyer",
+            grammarMode: "Mode Grammaire"
         }
     };
 
     return (
-        <div className="flex mb-4">
+        <div className="flex items-center space-x-2">
             <Input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={translations[language].placeholder}
-                className="flex-grow mr-2"
+                className="flex-grow"
             />
             <Button onClick={handleSendMessage} disabled={isLoading}>
                 {translations[language].send}
+            </Button>
+            <Button onClick={toggleGrammarMode} variant={grammarMode ? "secondary" : "outline"}>
+                {translations[language].grammarMode}
             </Button>
         </div>
     );
