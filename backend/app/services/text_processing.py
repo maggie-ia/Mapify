@@ -11,6 +11,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from deep_translator import GoogleTranslator
 import language_tool_python
+from flask import current_app
+from app.models.user import User
+from app.services.translation_service import translate_text
+import logging
 
 summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
@@ -158,3 +162,28 @@ def extract_text_from_file(file_path):
     else:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
+
+def process_text(user_id, operation, text, target_language=None):
+    user = User.query.get(user_id)
+    if not user:
+        current_app.logger.error(f"User not found: {user_id}")
+        return {"error": "User not found"}, 404
+
+    try:
+        if operation == 'translate':
+            if not user.can_translate_to_language(target_language):
+                error_message = f"User {user_id} attempted unauthorized translation to {target_language}"
+                user.log_error(error_message)
+                return {"error": "Unauthorized translation language"}, 403
+            result = translate_text(text, target_language)
+        else:
+            # ... keep existing code (other operations)
+
+        return {"result": result}, 200
+    except Exception as e:
+        error_message = f"Error processing {operation} for user {user_id}: {str(e)}"
+        user.log_error(error_message)
+        current_app.logger.error(error_message)
+        return {"error": "An error occurred while processing your request"}, 500
+
+# ... keep existing code (other functions)
