@@ -15,12 +15,12 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 @jwt_required()
 def upload_document():
     if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
+        return jsonify({"error": "No se ha proporcionado ningún archivo"}), 400
     
     file = request.files['file']
     
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        return jsonify({"error": "No se ha seleccionado ningún archivo"}), 400
     
     try:
         validate_file_type(file.filename, ALLOWED_EXTENSIONS)
@@ -31,49 +31,48 @@ def upload_document():
     user_id = get_jwt_identity()
     page_limit = get_page_limit(user_id)
     
-    # Here you would process the file and count pages
-    # For demonstration, let's assume we have a function to count pages
+    # Aquí procesarías el archivo y contarías las páginas
+    # Por ahora, asumiremos que tenemos una función para contar páginas
     page_count = count_pages(file)
     
     if page_count > page_limit:
-        return jsonify({"error": f"Document exceeds the {page_limit} page limit for your membership level"}), 403
+        return jsonify({"error": f"El documento excede el límite de {page_limit} páginas para su nivel de membresía"}), 403
 
     filename = secure_filename(file.filename)
-    # Save the file and create a Document object
-    # This is where you would implement the logic to save the file and create a Document object
-    # For example:
+    # Aquí implementarías la lógica para guardar el archivo y crear un objeto Document
+    # Por ejemplo:
     # file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     # file.save(file_path)
     # document = Document(filename=filename, file_path=file_path, user_id=user_id)
     # db.session.add(document)
     # db.session.commit()
 
-    return jsonify({"message": "File uploaded successfully", "document_id": document.id}), 201
+    return jsonify({"message": "Archivo subido exitosamente", "document_id": document.id}), 201
 
 def count_pages(file):
-    # Implement page counting logic here
-    # This is a placeholder function
-    return 1  # For demonstration, always return 1 page
+    # Implementar la lógica de conteo de páginas aquí
+    # Esta es una función de marcador de posición
+    return 1  # Por demostración, siempre devuelve 1 página
 
 @document.route('/<int:document_id>', methods=['GET'])
 @jwt_required()
 def get_document(document_id):
     document = Document.query.get_or_404(document_id)
-    # Check if the current user has permission to access this document
+    # Verificar si el usuario actual tiene permiso para acceder a este documento
     if document.user_id != get_jwt_identity():
-        return jsonify({"error": "Unauthorized access"}), 403
+        return jsonify({"error": "Acceso no autorizado"}), 403
     return jsonify({"id": document.id, "filename": document.filename, "created_at": document.created_at}), 200
 
 @document.route('/<int:document_id>', methods=['DELETE'])
 @jwt_required()
 def delete_document(document_id):
     document = Document.query.get_or_404(document_id)
-    # Check if the current user has permission to delete this document
+    # Verificar si el usuario actual tiene permiso para eliminar este documento
     if document.user_id != get_jwt_identity():
-        return jsonify({"error": "Unauthorized access"}), 403
+        return jsonify({"error": "Acceso no autorizado"}), 403
     db.session.delete(document)
     db.session.commit()
-    return jsonify({"message": "Document deleted successfully"}), 200
+    return jsonify({"message": "Documento eliminado exitosamente"}), 200
 
 @document.route('/user', methods=['GET'])
 @jwt_required()
