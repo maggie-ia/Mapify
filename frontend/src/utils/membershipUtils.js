@@ -74,6 +74,11 @@ export const getConceptMapNodeLimit = () => {
   return MEMBERSHIP_LIMITS[user.membership].maxConceptMapNodes;
 };
 
+export const getProblemSolvingLimit = () => {
+  const { user } = useAuth();
+  return MEMBERSHIP_LIMITS[user.membership].problemSolvingLimit;
+};
+
 export const canExport = (format) => {
   const { user } = useAuth();
   const limits = MEMBERSHIP_LIMITS[user.membership];
