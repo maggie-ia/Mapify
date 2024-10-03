@@ -45,7 +45,7 @@ def synthesize_text(text):
         logger.error(f"Error al sintetizar el texto: {str(e)}")
         raise SynthesisError("No se pudo sintetizar el texto.")
 
-def extract_relevant_phrases(text, num_phrases=5):
+def generate_relevant_phrases(text, num_phrases=5):
     try:
         sentences = text.split('.')
         vectorizer = TfidfVectorizer(stop_words='spanish')
