@@ -33,7 +33,7 @@ def summarize_text(text, max_length=150, min_length=50):
         return summary[0]['summary_text']
     except Exception as e:
         logger.error(f"Error al resumir el texto: {str(e)}")
-        raise SummarizationError("No se pudo generar el resumen del texto.")
+        raise SummarizationError("No se pudo generar el resumen del texto. Por favor, intente nuevamente.")
 
 def paraphrase_text(text):
     try:
@@ -41,7 +41,7 @@ def paraphrase_text(text):
         return paraphrased
     except Exception as e:
         logger.error(f"Error al parafrasear el texto: {str(e)}")
-        raise ParaphraseError("No se pudo parafrasear el texto.")
+        raise ParaphraseError("No se pudo parafrasear el texto. Por favor, intente con un texto diferente.")
 
 def synthesize_text(text):
     try:
@@ -50,7 +50,7 @@ def synthesize_text(text):
         return synthesis
     except Exception as e:
         logger.error(f"Error al sintetizar el texto: {str(e)}")
-        raise SynthesisError("No se pudo sintetizar el texto.")
+        raise SynthesisError("No se pudo sintetizar el texto. Por favor, verifique el contenido e intente nuevamente.")
 
 def generate_relevant_phrases(text, num_phrases=5):
     try:
@@ -63,7 +63,7 @@ def generate_relevant_phrases(text, num_phrases=5):
         return relevant_phrases
     except Exception as e:
         logger.error(f"Error al extraer frases relevantes: {str(e)}")
-        raise RelevantPhrasesError("No se pudieron extraer frases relevantes.")
+        raise RelevantPhrasesError("No se pudieron extraer frases relevantes. Por favor, intente con un texto más largo.")
 
 def generate_concept_map(text):
     try:
@@ -93,7 +93,7 @@ def generate_concept_map(text):
         return f"data:image/png;base64,{img_str}"
     except Exception as e:
         logger.error(f"Error al generar el mapa conceptual: {str(e)}")
-        raise ConceptMapError("No se pudo generar el mapa conceptual.")
+        raise ConceptMapError("No se pudo generar el mapa conceptual. Por favor, intente con un texto más estructurado.")
 
 def translate_text(text, target_language):
     try:
@@ -102,7 +102,7 @@ def translate_text(text, target_language):
         return translated_text
     except Exception as e:
         logger.error(f"Error al traducir el texto: {str(e)}")
-        raise TranslationError("No se pudo traducir el texto.")
+        raise TranslationError("No se pudo traducir el texto. Por favor, verifique el idioma de destino e intente nuevamente.")
 
 def check_grammar(text):
     matches = tool.check(text)
