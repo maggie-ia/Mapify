@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.auth_service import (
     authenticate_user, register_user, verify_email, enable_two_factor,
-    verify_two_factor, reset_password, change_password, logout_all_devices
+    verify_two_factor, reset_password, change_password, logout_all_devices,
+    initiate_password_reset
 )
 
 auth_bp = Blueprint('auth', __name__)
@@ -52,12 +53,24 @@ def verify_2fa():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
+@auth_bp.route('/initiate-password-reset', methods=['POST'])
+def initiate_password_reset_route():
+    data = request.get_json()
+    try:
+        result = initiate_password_reset(data['email'])
+        if result:
+            return jsonify({"message": "Se ha enviado un correo con instrucciones para restablecer la contraseña"}), 200
+        else:
+            return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password_route():
     data = request.get_json()
-    if reset_password(data['email']):
-        return jsonify({"message": "Se ha enviado un correo con instrucciones para restablecer la contraseña"}), 200
-    return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
+    if reset_password(data['token'], data['new_password']):
+        return jsonify({"message": "Contraseña restablecida exitosamente"}), 200
+    return jsonify({"error": "Token inválido o expirado"}), 400
 
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()

@@ -133,7 +133,6 @@ def is_password_secure(password):
         return False
     return True
 
-
 def send_verification_email(email, token):
     subject = "Verifica tu correo electrónico"
     body = f"Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace: {current_app.config['FRONTEND_URL']}/verify-email?token={token}"
@@ -147,11 +146,25 @@ def send_password_reset_email(email, token):
 def initiate_password_reset(email):
     user = User.query.filter_by(email=email).first()
     if user:
-        reset_token = user.generate_reset_token()
+        reset_token = generate_reset_token()
+        user.password_reset_token = reset_token
+        user.password_reset_expiration = datetime.utcnow() + timedelta(hours=1)
         db.session.commit()
-        send_password_reset_email(email, reset_token)
-        log_user_activity(user.id, 'password_reset_requested')
+        send_password_reset_email(user.email, reset_token)
+        log_user_activity(user.id, 'password_reset_initiated')
         return True
+    return False
+
+def reset_password(token, new_password):
+    user = User.query.filter_by(password_reset_token=token).first()
+    if user and user.password_reset_expiration > datetime.utcnow():
+        if is_password_secure(new_password):
+            user.set_password(new_password)
+            user.password_reset_token = None
+            user.password_reset_expiration = None
+            db.session.commit()
+            log_user_activity(user.id, 'password_reset_completed')
+            return True
     return False
 
 def send_email(to_email, subject, body):
