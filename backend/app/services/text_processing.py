@@ -5,10 +5,9 @@ import PyPDF2
 from io import BytesIO
 import docx
 from sklearn.feature_extraction.text import TfidfVectorizer
-import numpy as np
-import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
+import base64
 from deep_translator import GoogleTranslator
 import language_tool_python
 from flask import current_app
@@ -16,40 +15,32 @@ from app.models.user import User
 from app.services.translation_service import translate_text
 import logging
 
+logger = logging.getLogger(__name__)
+
 summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('en-US')
 
-logger = logging.getLogger(__name__)
-
-def identify_problems(text):
-    """
-    Identifica problemas matemáticos, físicos o químicos en el texto.
-    """
-    math_pattern = r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b.*?(?:\d+|\bx\b|\by\b)'
-    physics_pattern = r'\b(?:velocidad|aceleración|fuerza|energía)\b.*?(?:\d+\s*[a-zA-Z]+/?[a-zA-Z]*|\d+\s*\w+\s*por\s*\w+)'
-    chemistry_pattern = r'\b(?:mol[es]?|concentración|pH)\b.*?(?:\d+(?:\.\d+)?|\w+\s*\+\s*\w+)'
-
-    problems = []
-    for sentence in nlp(text).sents:
-        sentence_text = sentence.text
-        if re.search(math_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('matemática', sentence_text))
-        elif re.search(physics_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('física', sentence_text))
-        elif re.search(chemistry_pattern, sentence_text, re.IGNORECASE):
-            problems.append(('química', sentence_text))
-
-    return problems
+def identify_problem_type(text):
+    patterns = {
+        "matemática": r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b',
+        "física": r'\b(?:velocidad|aceleración|fuerza|energía)\b',
+        "química": r'\b(?:mol[es]?|concentración|pH)\b'
+    }
+    for problem_type, pattern in patterns.items():
+        if re.search(pattern, text, re.IGNORECASE):
+            return problem_type
+    return "general"
 
 def solve_problem(text):
-    """
-    Intenta resolver un problema matemático, físico o químico.
-    """
     problem_type = identify_problem_type(text)
-    methods = generate_solution_methods(text, problem_type)
-    step_by_step = explain_problem(text, problem_type)
+    methods = [
+        ("Método analítico", "Resolver el problema usando ecuaciones y fórmulas."),
+        ("Método numérico", "Utilizar algoritmos computacionales para aproximar la solución."),
+        ("Método gráfico", "Representar visualmente el problema y su solución.")
+    ]
+    step_by_step = explain_problem(text)
     resources = get_additional_resources(problem_type)
     
     return {
@@ -59,43 +50,19 @@ def solve_problem(text):
         "resources": resources
     }
 
-def identify_problem_type(text):
-    # Implementa la lógica para identificar el tipo de problema
-    # Por ahora, usaremos una versión simplificada
-    if re.search(r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b', text, re.IGNORECASE):
-        return "matemática"
-    elif re.search(r'\b(?:velocidad|aceleración|fuerza|energía)\b', text, re.IGNORECASE):
-        return "física"
-    elif re.search(r'\b(?:mol[es]?|concentración|pH)\b', text, re.IGNORECASE):
-        return "química"
-    else:
-        return "general"
-
-def generate_solution_methods(text, problem_type):
-    # Implementa la lógica para generar métodos de solución
-    # Por ahora, usaremos métodos genéricos
-    return [
-        ("Método analítico", "Resolver el problema usando ecuaciones y fórmulas."),
-        ("Método numérico", "Utilizar algoritmos computacionales para aproximar la solución."),
-        ("Método gráfico", "Representar visualmente el problema y su solución.")
+def explain_problem(text):
+    steps = [
+        "Paso 1: Identificar las variables y datos conocidos del problema.",
+        "Paso 2: Determinar qué se está pidiendo calcular o encontrar.",
+        "Paso 3: Seleccionar la fórmula o método apropiado para resolver el problema.",
+        "Paso 4: Aplicar el método seleccionado, mostrando cada paso del cálculo.",
+        "Paso 5: Verificar que la solución tenga sentido en el contexto del problema.",
+        "Paso 6: Interpretar el resultado y formular una conclusión."
     ]
-
-def explain_problem(text, problem_type):
-    # Implementa la lógica para explicar el problema paso a paso
-    # Por ahora, usaremos una explicación genérica
-    return f"""
-    1. Identifica las variables y datos conocidos del problema.
-    2. Determina qué se está pidiendo calcular o encontrar.
-    3. Selecciona la fórmula o método apropiado para resolver el problema.
-    4. Aplica el método seleccionado, mostrando cada paso del cálculo.
-    5. Verifica que la solución tenga sentido en el contexto del problema.
-    6. Interpreta el resultado y formula una conclusión.
-    """
+    return "\n".join(steps)
 
 def get_additional_resources(problem_type):
-    # Implementa la lógica para obtener recursos adicionales
-    # Por ahora, usaremos recursos genéricos
-    return [
+    resources = [
         {
             "title": f"Khan Academy - Resolución de problemas de {problem_type}",
             "url": f"https://es.khanacademy.org/math/{problem_type}"
@@ -103,8 +70,13 @@ def get_additional_resources(problem_type):
         {
             "title": "Wolfram Alpha - Calculadora y solucionador de problemas",
             "url": "https://www.wolframalpha.com/"
+        },
+        {
+            "title": "MIT OpenCourseWare - Métodos de resolución de problemas",
+            "url": "https://ocw.mit.edu/courses/mathematics/"
         }
     ]
+    return resources
 
 def summarize_text(text, max_length=150, min_length=50):
     try:
@@ -123,16 +95,20 @@ def paraphrase_text(text):
         raise
 
 def synthesize_text(text):
-    # Implementar la lógica de síntesis aquí
-    return f"Síntesis de: {text}"
+    summary = summarize_text(text, max_length=100, min_length=30)
+    synthesis = paraphrase_text(summary)
+    return synthesis
 
-def generate_relevant_phrases(text):
-    # Implementar la lógica para generar frases relevantes
-    return ["Frase relevante 1", "Frase relevante 2", "Frase relevante 3"]
+def extract_relevant_phrases(text, num_phrases=5):
+    sentences = text.split('.')
+    vectorizer = TfidfVectorizer(stop_words='spanish')
+    tfidf_matrix = vectorizer.fit_transform(sentences)
+    sentence_scores = tfidf_matrix.sum(axis=1).A1
+    top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
+    relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
+    return relevant_phrases
 
 def generate_concept_map(text):
-    # Implementar la lógica para generar un mapa conceptual
-    # Esta es una implementación simplificada
     G = nx.Graph()
     G.add_node("Concepto Central")
     G.add_edge("Concepto Central", "Concepto 1")
@@ -158,13 +134,12 @@ def extract_text_from_file(file_path):
     if file_extension in ['jpg', 'jpeg', 'png']:
         return pytesseract.image_to_string(file_path)
     elif file_extension == 'pdf':
-        pages = convert_from_path(file_path)
-        text = ""
-        for page in pages:
-            text += pytesseract.image_to_string(page)
-        return text
+        with open(file_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            return " ".join([page.extract_text() for page in reader.pages])
     elif file_extension in ['doc', 'docx']:
-        return docx2txt.process(file_path)
+        doc = docx.Document(file_path)
+        return " ".join([paragraph.text for paragraph in doc.paragraphs])
     else:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
@@ -175,29 +150,27 @@ def process_text(user_id, operation, text, target_language=None):
         logger.error(f"Usuario no encontrado: {user_id}")
         return {"error": "Usuario no encontrado"}, 404
 
+    operations = {
+        'translate': lambda: translate_text(text, target_language) if user.can_translate_to_language(target_language) else None,
+        'summarize': lambda: summarize_text(text),
+        'paraphrase': lambda: paraphrase_text(text),
+        'synthesize': lambda: synthesize_text(text),
+        'conceptMap': lambda: generate_concept_map(text),
+        'relevantPhrases': lambda: extract_relevant_phrases(text),
+        'problemSolving': lambda: solve_problem(text)
+    }
+
     try:
-        if operation == 'translate':
-            if not user.can_translate_to_language(target_language):
-                error_message = f"El usuario {user_id} intentó una traducción no autorizada al idioma {target_language}"
-                logger.warning(error_message)
-                user.log_error(error_message)
-                return {"error": "Idioma de traducción no autorizado"}, 403
-            result = translate_text(text, target_language)
-        elif operation == 'summarize':
-            result = summarize_text(text)
-        elif operation == 'paraphrase':
-            result = paraphrase_text(text)
-        elif operation == 'synthesize':
-            result = synthesize_text(text)
-        elif operation == 'conceptMap':
-            result = generate_concept_map(text)
-        elif operation == 'relevantPhrases':
-            result = generate_relevant_phrases(text)
-        elif operation == 'problemSolving':
-            result = solve_problem(text)
-        else:
+        if operation not in operations:
             logger.warning(f"Operación no soportada: {operation}")
             return {"error": "Operación no soportada"}, 400
+
+        result = operations[operation]()
+        if result is None and operation == 'translate':
+            error_message = f"El usuario {user_id} intentó una traducción no autorizada al idioma {target_language}"
+            logger.warning(error_message)
+            user.log_error(error_message)
+            return {"error": "Idioma de traducción no autorizado"}, 403
 
         logger.info(f"Operación {operation} completada con éxito para el usuario {user_id}")
         return {"result": result}, 200
@@ -206,3 +179,19 @@ def process_text(user_id, operation, text, target_language=None):
         logger.error(error_message)
         user.log_error(error_message)
         return {"error": "Ocurrió un error al procesar su solicitud"}, 500
+
+def get_writing_assistance(text, membership_type):
+    matches = tool.check(text)
+    suggestions = []
+    
+    for match in matches:
+        if membership_type == 'premium' or (membership_type == 'basic' and match.ruleIssueType in ['grammar', 'typos']):
+            suggestion = {
+                'original': text[match.offset:match.offset + match.errorLength],
+                'suggested': match.replacements[0] if match.replacements else '',
+                'message': match.message,
+                'type': match.ruleIssueType
+            }
+            suggestions.append(suggestion)
+    
+    return suggestions[:10]  # Limitar a 10 sugerencias para evitar sobrecarga
