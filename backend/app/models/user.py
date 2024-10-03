@@ -2,6 +2,8 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import logging
+import secrets
+import pyotp
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +28,9 @@ class User(db.Model):
     two_factor_secret = db.Column(db.String(32))
     failed_login_attempts = db.Column(db.Integer, default=0)
     account_locked_until = db.Column(db.DateTime)
+    refresh_token_jti = db.Column(db.String(64))
+    email_verification_token = db.Column(db.String(64))
+    email_verification_sent_at = db.Column(db.DateTime)
 
     def get_max_file_size(self):
         if self.membership_type == 'premium':
@@ -52,24 +57,43 @@ class User(db.Model):
         return True
 
     def generate_email_verification_token(self):
-        # Implement token generation logic
-        pass
+        token = secrets.token_urlsafe(32)
+        self.email_verification_token = token
+        self.email_verification_sent_at = datetime.utcnow()
+        db.session.commit()
+        return token
 
     def verify_email(self, token):
-        # Implement email verification logic
-        pass
+        if self.email_verification_token == token and \
+           datetime.utcnow() - self.email_verification_sent_at < timedelta(hours=24):
+            self.email_verified = True
+            self.email_verification_token = None
+            db.session.commit()
+            return True
+        return False
 
     def enable_two_factor(self):
-        # Implement 2FA enabling logic
-        pass
+        self.two_factor_secret = pyotp.random_base32()
+        self.two_factor_enabled = True
+        db.session.commit()
+        return self.two_factor_secret
 
     def verify_two_factor(self, token):
-        # Implement 2FA verification logic
-        pass
+        totp = pyotp.TOTP(self.two_factor_secret)
+        return totp.verify(token)
 
     def is_password_secure(self, password):
-        # Implement password security check
-        pass
+        if len(password) < 8:
+            return False
+        if not any(char.isupper() for char in password):
+            return False
+        if not any(char.islower() for char in password):
+            return False
+        if not any(char.isdigit() for char in password):
+            return False
+        if not any(char in "!@#$%^&*(),.?\":{}|<>" for char in password):
+            return False
+        return True
 
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -5,6 +5,8 @@ from werkzeug.security import check_password_hash
 import logging
 from datetime import datetime, timedelta
 import pyotp
+import re
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +102,13 @@ def change_password(user_id, old_password, new_password):
     return False
 
 def logout_all_devices(user_id):
-    # Implement logic to invalidate all refresh tokens for the user
-    log_user_activity(user_id, 'logout_all_devices')
-    pass
+    user = User.query.get(user_id)
+    if user:
+        user.refresh_token_jti = secrets.token_hex(32)
+        db.session.commit()
+        log_user_activity(user_id, 'logout_all_devices')
+        return True
+    return False
 
 def log_user_activity(user_id, activity_type, details=None):
     new_activity = UserActivity(user_id=user_id, activity_type=activity_type, details=details)
@@ -110,17 +116,27 @@ def log_user_activity(user_id, activity_type, details=None):
     db.session.commit()
 
 def is_password_secure(password):
-    # Implement password security checks
-    pass
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"\d", password):
+        return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False
+    return True
 
 def send_verification_email(email, token):
-    # Implement email sending logic
-    pass
+    # Implementar lógica de envío de correo electrónico
+    # Utilizar un servicio de correo electrónico como SendGrid o SMTP
+    logger.info(f"Enviando correo de verificación a {email} con token {token}")
 
 def send_password_reset_email(email, token):
-    # Implement email sending logic
-    pass
+    # Implementar lógica de envío de correo electrónico
+    # Utilizar un servicio de correo electrónico como SendGrid o SMTP
+    logger.info(f"Enviando correo de restablecimiento de contraseña a {email} con token {token}")
 
 def generate_reset_token():
-    # Implement token generation logic
-    pass
+    return secrets.token_urlsafe(32)
