@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const useErrorHandler = () => {
-    const [error, setError] = useState(null);
+    const { addNotification } = useNotification();
     const { language } = useLanguage();
 
     const translations = {
@@ -25,19 +26,15 @@ const useErrorHandler = () => {
 
     const handleError = useCallback((error) => {
         if (error.message === 'Network Error') {
-            setError(translations[language].networkError);
+            addNotification('error', translations[language].networkError);
         } else if (error.response && error.response.status >= 500) {
-            setError(translations[language].serverError);
+            addNotification('error', translations[language].serverError);
         } else {
-            setError(error.message || translations[language].unknownError);
+            addNotification('error', error.message || translations[language].unknownError);
         }
-    }, [language]);
+    }, [language, addNotification]);
 
-    const clearError = useCallback(() => {
-        setError(null);
-    }, []);
-
-    return { error, handleError, clearError };
+    return { handleError };
 };
 
 export default useErrorHandler;

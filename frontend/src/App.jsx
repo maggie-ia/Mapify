@@ -12,10 +12,13 @@ import Results from './pages/Results';
 import Settings from './pages/Settings';
 import Login from './components/Login';
 import Register from './components/Register';
+import useErrorHandler from './hooks/useErrorHandler';
 
 const queryClient = new QueryClient();
 
 function App() {
+    const { error, clearError } = useErrorHandler();
+
     return (
         <QueryClientProvider client={queryClient}>
             <LanguageProvider>
