@@ -7,7 +7,7 @@ import base64
 from functools import lru_cache
 from deep_translator import GoogleTranslator
 from .embedding_service import get_relevant_context
-from .text_processing import identify_problems
+from .text_processing import identify_problems, solve_problem, explain_problem
 
 qa_model = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -120,5 +120,3 @@ def explain_problem(problem):
     # Aquí implementarías la lógica para explicar problemas matemáticos, físicos o químicos
     # Por ahora, devolveremos una explicación genérica
     return f"El problema '{problem}' parece estar relacionado con [área del problema]. Para entenderlo mejor, es importante considerar los siguientes conceptos: [conceptos relevantes]. La clave para abordar este tipo de problemas es [estrategia general]."
-
-# ... keep existing code

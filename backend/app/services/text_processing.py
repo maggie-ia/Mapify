@@ -8,52 +8,12 @@ import docx
 summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
 
-def extract_text_from_pdf(file_content):
-    """
-    Extrae el texto de un archivo PDF.
-    """
-    pdf_file = BytesIO(file_content)
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
-
-def extract_text_from_docx(file_content):
-    """
-    Extrae el texto de un archivo DOCX.
-    """
-    doc = docx.Document(BytesIO(file_content))
-    text = ""
-    for para in doc.paragraphs:
-        text += para.text + "\n"
-    return text
-
-def process_file(file):
-    """
-    Procesa el archivo subido y extrae su contenido.
-    """
-    if file.filename.endswith('.pdf'):
-        return extract_text_from_pdf(file.read())
-    elif file.filename.endswith('.txt'):
-        return file.read().decode('utf-8')
-    elif file.filename.endswith('.docx'):
-        return extract_text_from_docx(file.read())
-    else:
-        return "Formato de archivo no soportado."
-
-def summarize_text(text, max_length=150, min_length=50):
-    """
-    Resume el texto dado utilizando la biblioteca de transformers.
-    """
-    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-    return summary[0]['summary_text']
+# ... keep existing code (extract_text_from_pdf, extract_text_from_docx, process_file, summarize_text)
 
 def identify_problems(text):
     """
     Identifica problemas matemáticos, físicos o químicos en el texto.
     """
-    # Patrones simples para identificar problemas
     math_pattern = r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b.*?(?:\d+|\bx\b|\by\b)'
     physics_pattern = r'\b(?:velocidad|aceleración|fuerza|energía)\b.*?(?:\d+\s*[a-zA-Z]+/?[a-zA-Z]*|\d+\s*\w+\s*por\s*\w+)'
     chemistry_pattern = r'\b(?:mol[es]?|concentración|pH)\b.*?(?:\d+(?:\.\d+)?|\w+\s*\+\s*\w+)'
@@ -69,3 +29,28 @@ def identify_problems(text):
             problems.append(('química', sentence_text))
 
     return problems
+
+def solve_problem(problem):
+    """
+    Intenta resolver un problema matemático, físico o químico.
+    """
+    # Esta es una implementación básica. En un sistema real, se utilizaría
+    # un motor de resolución de problemas más avanzado.
+    return f"Para resolver el problema '{problem}', se recomienda seguir estos pasos:\n" \
+           f"1. Identificar las variables y datos conocidos.\n" \
+           f"2. Determinar la fórmula o ecuación apropiada.\n" \
+           f"3. Sustituir los valores conocidos en la ecuación.\n" \
+           f"4. Resolver la ecuación para encontrar la incógnita.\n" \
+           f"5. Verificar que la solución tenga sentido en el contexto del problema."
+
+def explain_problem(problem):
+    """
+    Proporciona una explicación detallada de cómo abordar un problema.
+    """
+    return f"Para entender y resolver el problema '{problem}', considera lo siguiente:\n" \
+           f"1. Contexto: Identifica el área de estudio (matemáticas, física, química) y los conceptos relevantes.\n" \
+           f"2. Datos: Enumera toda la información proporcionada en el enunciado del problema.\n" \
+           f"3. Incógnita: Determina qué se está pidiendo calcular o encontrar.\n" \
+           f"4. Método: Selecciona la técnica o fórmula apropiada para resolver el problema.\n" \
+           f"5. Resolución: Aplica paso a paso el método seleccionado.\n" \
+           f"6. Comprobación: Verifica que la solución sea lógica y consistente con el enunciado."
