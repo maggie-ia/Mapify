@@ -1,19 +1,25 @@
 import re
-from transformers import pipeline
-import spacy
-import PyPDF2
+import logging
+import base64
 from io import BytesIO
-import docx
-from sklearn.feature_extraction.text import TfidfVectorizer
+
+import numpy as np
+import spacy
 import networkx as nx
 import matplotlib.pyplot as plt
-import base64
+from transformers import pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
 from deep_translator import GoogleTranslator
 import language_tool_python
+import PyPDF2
+import docx
+import pytesseract
+from pdf2image import convert_from_path
+import docx2txt
+
 from flask import current_app
 from app.models.user import User
 from app.services.translation_service import translate_text
-import logging
 
 logger = logging.getLogger(__name__)
 
