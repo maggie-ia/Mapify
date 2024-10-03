@@ -21,6 +21,8 @@ export const fileUploadSchema = Yup.object().shape({
         })
         .test('fileSize', 'File size is too large', (value) => {
             if (!value) return false;
-            return value.size <= 5 * 1024 * 1024; // 5MB limit
+            return value.size <= 10 * 1024 * 1024; // 10MB limit
         }),
 });
+
+// Add more validation schemas as needed for other forms in your application

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -15,6 +15,7 @@ const FileUpload = ({ onFileUploaded }) => {
     const [error, setError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [isValid, setIsValid] = useState(false);
     const { language } = useLanguage();
     const { user } = useAuth();
 
@@ -57,35 +58,49 @@ const FileUpload = ({ onFileUploaded }) => {
         }
     };
 
-    const handleFileChange = async (event) => {
-        const selectedFile = event.target.files[0];
+    useEffect(() => {
+        validateFile();
+    }, [file]);
+
+    const validateFile = async () => {
+        if (!file) {
+            setIsValid(false);
+            setError('');
+            return;
+        }
+
         try {
-            await fileUploadSchema.validate({ file: selectedFile });
-            setFile(selectedFile);
+            await fileUploadSchema.validate({ file });
+            setIsValid(true);
             setError('');
         } catch (err) {
-            setFile(null);
+            setIsValid(false);
             setError(err.message);
         }
     };
 
+    const handleFileChange = (event) => {
+        const selectedFile = event.target.files[0];
+        setFile(selectedFile);
+    };
+
     const handleUpload = async () => {
-        if (file) {
-            setIsUploading(true);
-            setProgress(0);
-            try {
-                const response = await uploadFile(file, (progress) => {
-                    setProgress(progress);
-                });
-                onFileUploaded(response);
-                setIsUploading(false);
-                setFile(null);
-                toast.success(translations[language].uploadSuccess);
-            } catch (error) {
-                setError(error.message || translations[language].uploadError);
-                setIsUploading(false);
-                toast.error(error.message || translations[language].uploadError);
-            }
+        if (!isValid) return;
+
+        setIsUploading(true);
+        setProgress(0);
+        try {
+            const response = await uploadFile(file, (progress) => {
+                setProgress(progress);
+            });
+            onFileUploaded(response);
+            setIsUploading(false);
+            setFile(null);
+            toast.success(translations[language].uploadSuccess);
+        } catch (error) {
+            setError(error.message || translations[language].uploadError);
+            setIsUploading(false);
+            toast.error(error.message || translations[language].uploadError);
         }
     };
 
@@ -109,7 +124,7 @@ const FileUpload = ({ onFileUploaded }) => {
             )}
             <Button 
                 onClick={handleUpload} 
-                disabled={!file || isUploading}
+                disabled={!isValid || isUploading}
                 className="w-full bg-tertiary hover:bg-quaternary text-white mb-4"
             >
                 {isUploading ? translations[language].uploading : translations[language].upload}
