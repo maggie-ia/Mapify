@@ -1,5 +1,6 @@
-import re
 import logging
+from app.utils.exceptions import *
+import re
 import base64
 from io import BytesIO
 
@@ -90,7 +91,7 @@ def summarize_text(text, max_length=150, min_length=50):
         return summary[0]['summary_text']
     except Exception as e:
         logger.error(f"Error al resumir el texto: {str(e)}")
-        raise
+        raise SummarizationError("No se pudo generar el resumen del texto.")
 
 def paraphrase_text(text):
     try:
@@ -98,37 +99,49 @@ def paraphrase_text(text):
         return paraphrased
     except Exception as e:
         logger.error(f"Error al parafrasear el texto: {str(e)}")
-        raise
+        raise ParaphraseError("No se pudo parafrasear el texto.")
 
 def synthesize_text(text):
-    summary = summarize_text(text, max_length=100, min_length=30)
-    synthesis = paraphrase_text(summary)
-    return synthesis
+    try:
+        summary = summarize_text(text, max_length=100, min_length=30)
+        synthesis = paraphrase_text(summary)
+        return synthesis
+    except Exception as e:
+        logger.error(f"Error al sintetizar el texto: {str(e)}")
+        raise SynthesisError("No se pudo sintetizar el texto.")
 
 def extract_relevant_phrases(text, num_phrases=5):
-    sentences = text.split('.')
-    vectorizer = TfidfVectorizer(stop_words='spanish')
-    tfidf_matrix = vectorizer.fit_transform(sentences)
-    sentence_scores = tfidf_matrix.sum(axis=1).A1
-    top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
-    relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
-    return relevant_phrases
+    try:
+        sentences = text.split('.')
+        vectorizer = TfidfVectorizer(stop_words='spanish')
+        tfidf_matrix = vectorizer.fit_transform(sentences)
+        sentence_scores = tfidf_matrix.sum(axis=1).A1
+        top_sentence_indices = sentence_scores.argsort()[-num_phrases:][::-1]
+        relevant_phrases = [sentences[i].strip() for i in top_sentence_indices]
+        return relevant_phrases
+    except Exception as e:
+        logger.error(f"Error al extraer frases relevantes: {str(e)}")
+        raise RelevantPhrasesError("No se pudieron extraer frases relevantes.")
 
 def generate_concept_map(text):
-    G = nx.Graph()
-    G.add_node("Concepto Central")
-    G.add_edge("Concepto Central", "Concepto 1")
-    G.add_edge("Concepto Central", "Concepto 2")
-    
-    plt.figure(figsize=(10, 8))
-    nx.draw(G, with_labels=True, node_color='lightblue', node_size=3000, font_size=10, font_weight='bold')
-    
-    img_buffer = BytesIO()
-    plt.savefig(img_buffer, format='png')
-    img_buffer.seek(0)
-    img_str = base64.b64encode(img_buffer.getvalue()).decode()
-    
-    return f"data:image/png;base64,{img_str}"
+    try:
+        G = nx.Graph()
+        G.add_node("Concepto Central")
+        G.add_edge("Concepto Central", "Concepto 1")
+        G.add_edge("Concepto Central", "Concepto 2")
+        
+        plt.figure(figsize=(10, 8))
+        nx.draw(G, with_labels=True, node_color='lightblue', node_size=3000, font_size=10, font_weight='bold')
+        
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png')
+        img_buffer.seek(0)
+        img_str = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        return f"data:image/png;base64,{img_str}"
+    except Exception as e:
+        logger.error(f"Error al generar el mapa conceptual: {str(e)}")
+        raise ConceptMapError("No se pudo generar el mapa conceptual.")
 
 def check_grammar(text):
     matches = tool.check(text)
