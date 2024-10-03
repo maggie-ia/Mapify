@@ -21,6 +21,14 @@ class User(db.Model):
     chat_usage_count = db.Column(db.Integer, default=0)
     chat_usage_reset = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def get_max_file_size(self):
+        if self.membership_type == 'premium':
+            return 50 * 1024 * 1024  # 50 MB
+        elif self.membership_type == 'basic':
+            return 20 * 1024 * 1024  # 20 MB
+        else:
+            return 5 * 1024 * 1024  # 5 MB
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

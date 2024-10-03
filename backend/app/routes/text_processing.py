@@ -52,12 +52,16 @@ def process_text():
     try:
         result = perform_operation(operation, text, data, user_id)
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-    # Save the operation result
-    new_document = Document(content=text, user_id=user_id, operation_type=operation, result=result)
-    db.session.add(new_document)
-    db.session.commit()
+    try:
+        new_document = Document(content=text, user_id=user_id, operation_type=operation, result=result)
+        db.session.add(new_document)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error saving operation result"}), 500
 
     increment_operation(user_id, operation)
 
@@ -87,4 +91,4 @@ def perform_operation(operation, text, data, user_id):
     else:
         raise ValueError("Unsupported operation")
 
-# ... keep existing code for other routes
+# ... keep existing code (other routes)

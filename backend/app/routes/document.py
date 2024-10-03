@@ -5,40 +5,47 @@ from app.models.user import User
 from app import db
 from werkzeug.utils import secure_filename
 import os
+from app.utils.file_validators import validate_file_type, validate_file_size
 
 document_bp = Blueprint('document', __name__)
 
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 @document_bp.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_document():
     if 'file' not in request.files:
-        return jsonify({"message": "No file part"}), 400
+        return jsonify({"error": "No file part"}), 400
+    
     file = request.files['file']
+    
     if file.filename == '':
-        return jsonify({"message": "No selected file"}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(os.getenv('UPLOAD_FOLDER'), filename)
-        file.save(file_path)
-        
-        ocr_text = request.form.get('ocrText', '')
-        
-        new_document = Document(
-            filename=filename,
-            content=ocr_text if ocr_text else file.read().decode('utf-8'),
-            user_id=get_jwt_identity(),
-            file_type=filename.rsplit('.', 1)[1].lower()
-        )
-        db.session.add(new_document)
-        db.session.commit()
-        
-        return jsonify({"message": "File uploaded successfully", "document_id": new_document.id}), 201
-    return jsonify({"message": "File type not allowed"}), 400
+        return jsonify({"error": "No selected file"}), 400
+    
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    try:
+        validate_file_type(file.filename, ALLOWED_EXTENSIONS)
+        validate_file_size(file, user.get_max_file_size())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(os.getenv('UPLOAD_FOLDER'), filename)
+    file.save(file_path)
+    
+    new_document = Document(
+        filename=filename,
+        content=file.read().decode('utf-8'),
+        user_id=user_id,
+        file_type=filename.rsplit('.', 1)[1].lower()
+    )
+    db.session.add(new_document)
+    db.session.commit()
+    
+    return jsonify({"message": "File uploaded successfully", "document_id": new_document.id}), 201
 
 @document_bp.route('/list', methods=['GET'])
 @jwt_required()
