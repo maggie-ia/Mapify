@@ -1,25 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import axios from 'axios';
-import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../hooks/useAuth';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import RelevantPhrases from './RelevantPhrases';
-import ConceptMap from './ConceptMap';
-import ConversationCategories from './ConversationCategories';
-import ChatPersonalization from './ChatPersonalization';
-import TagManager from './TagManager';
-import ChatInput from './ChatInput';
+import { handleFeedback, checkGrammar, addTag } from '../utils/chatUtils';
 import ChatMessages from './ChatMessages';
+import ChatInput from './ChatInput';
 import OperationSelector from './OperationSelector';
 import SuggestedQuestions from './SuggestedQuestions';
-import { toast } from 'react-hot-toast';
-import { debounce } from 'lodash';
-import { logChatInteraction } from '../services/analyticsService';
-import { validateInput, encryptSensitiveData, reportSuspiciousActivity } from '../services/securityService';
+import TagManager from './TagManager';
 
 const AIChat = ({ documentId }) => {
     const [messages, setMessages] = useState([]);
@@ -32,75 +23,48 @@ const AIChat = ({ documentId }) => {
     const { user } = useAuth();
     const { language } = useLanguage();
 
-    const translations = {
-        es: {
-            placeholder: "Escribe tu pregunta aquí...",
-            send: "Enviar",
-            loading: "Cargando...",
-            error: "Error al cargar el chat",
-            notAvailable: "El chat con IA solo está disponible para usuarios premium.",
-            selectOperation: "Selecciona una operación",
-            chat: "Chat",
-            summarize: "Resumir",
-            paraphrase: "Parafrasear",
-            synthesize: "Sintetizar",
-            relevantPhrases: "Frases Relevantes",
-            conceptMap: "Mapa Conceptual",
-            translate: "Traducir",
-            errorSending: "Error al enviar el mensaje",
-            errorOperation: "Error al realizar la operación",
-            feedbackPositive: "¿Fue útil esta respuesta?",
-            feedbackNegative: "¿No fue útil esta respuesta?",
-            suggestedQuestions: "Preguntas sugeridas:",
-            usageLimitReached: "Has alcanzado el límite de uso del chat para este período.",
-            saveConversation: "Guardar conversación",
-            loadConversation: "Cargar conversación",
-            addTag: "Añadir etiqueta",
-            conversationSaved: "Conversación guardada exitosamente",
-            conversationLoaded: "Conversación cargada exitosamente"
+    const { data: chatData, isLoading, error, refetch } = useQuery({
+        queryKey: ['chatConversation', documentId],
+        queryFn: () => fetch(`/api/chat/${documentId}`).then(res => res.json()),
+        enabled: user.membership_type === 'premium',
+    });
+
+    const sendMessageMutation = useMutation({
+        mutationFn: (data) => fetch(`/api/chat/${documentId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(res => res.json()),
+        onSuccess: (data) => {
+            setMessages(prevMessages => [...prevMessages, data.userMessage, data.aiResponse]);
+            setInputMessage('');
+            setSuggestedQuestions(data.suggestedQuestions || []);
         },
-        en: {
-            placeholder: "Type your question here...",
-            send: "Send",
-            loading: "Loading...",
-            error: "Error loading chat",
-            notAvailable: "AI chat is only available for premium users.",
-            selectOperation: "Select an operation",
-            chat: "Chat",
-            summarize: "Summarize",
-            paraphrase: "Paraphrase",
-            synthesize: "Synthesize",
-            relevantPhrases: "Relevant Phrases",
-            conceptMap: "Concept Map",
-            translate: "Translate",
-            errorSending: "Error sending message",
-            errorOperation: "Error performing operation",
-            feedbackPositive: "Was this response helpful?",
-            feedbackNegative: "Was this response not helpful?",
-            suggestedQuestions: "Suggested questions:",
-            usageLimitReached: "You have reached your chat usage limit for this period.",
-            saveConversation: "Save conversation",
-            loadConversation: "Load conversation",
-            addTag: "Add tag",
-            conversationSaved: "Conversation saved successfully",
-            conversationLoaded: "Conversation loaded successfully"
-        },
-        fr: {
-            // ... (French translations omitted for brevity, but should be included in the actual implementation)
+    });
+
+    const handleSendMessage = async () => {
+        if (inputMessage.trim()) {
+            let messageToSend = inputMessage;
+            if (grammarMode) {
+                const grammarCheck = await checkGrammar(inputMessage);
+                if (grammarCheck.corrections.length > 0) {
+                    messageToSend = grammarCheck.correctedText;
+                }
+            }
+            sendMessageMutation.mutate({ message: messageToSend, operation });
         }
     };
 
-    const { data: chatData, isLoading, error, refetch } = useQuery({
-        queryKey: ['chatConversation', documentId],
-        queryFn: () => axios.get(`/api/chat/${documentId}`).then(res => res.data),
-        enabled: user.membership_type === 'premium',
-        retry: 3,
-        onError: (error) => {
-            console.error('Error fetching chat data:', error);
-            toast.error('Error al cargar la conversación');
+    const handleAddTag = async (newTag) => {
+        try {
+            const result = await addTag(documentId, newTag);
+            setTags(prevTags => [...prevTags, newTag]);
+        } catch (error) {
+            console.error('Error adding tag:', error);
         }
-    });
+    };
 
+<<<<<<< HEAD
     const sendMessageMutation = useMutation({
         mutationFn: (data) => axios.post(`/api/chat/${documentId}`, data),
         onSuccess: (data) => {
@@ -176,6 +140,8 @@ const AIChat = ({ documentId }) => {
             .catch(() => toast.error('Error adding tag'));
     }, [documentId, user.id]);
 
+=======
+>>>>>>> 2423003869e18c5a13aa22752dad3363e3b007bb
     useEffect(() => {
         if (chatData) {
             setMessages(chatData.messages);
@@ -183,13 +149,16 @@ const AIChat = ({ documentId }) => {
         }
     }, [chatData]);
 
+<<<<<<< HEAD
     const toggleGrammarMode = () => {
         setGrammarMode(!grammarMode);
         toast.success(`Grammar mode ${grammarMode ? 'disabled' : 'enabled'}`);
     };
 
+=======
+>>>>>>> 2423003869e18c5a13aa22752dad3363e3b007bb
     if (user.membership_type !== 'premium') {
-        return <p className="text-quaternary">El chat de IA solo está disponible para usuarios premium.</p>;
+        return <p>El chat de IA solo está disponible para usuarios premium.</p>;
     }
 
     if (isLoading) return <p>Cargando...</p>;
@@ -197,10 +166,17 @@ const AIChat = ({ documentId }) => {
 
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
+<<<<<<< HEAD
              <OperationSelector operation={operation} setOperation={setOperation} />
             <ChatMessages 
                 messages={messages} 
                 handleFeedback={handleFeedback}
+=======
+            <OperationSelector operation={operation} setOperation={setOperation} />
+            <ChatMessages 
+                messages={messages} 
+                handleFeedback={(messageId, isPositive) => handleFeedback(messageId, isPositive, setFeedback)}
+>>>>>>> 2423003869e18c5a13aa22752dad3363e3b007bb
                 grammarMode={grammarMode}
             />
             <SuggestedQuestions questions={suggestedQuestions} setInputMessage={setInputMessage} />
@@ -210,6 +186,7 @@ const AIChat = ({ documentId }) => {
                 handleSendMessage={handleSendMessage} 
                 isLoading={sendMessageMutation.isLoading}
                 grammarMode={grammarMode}
+<<<<<<< HEAD
                 toggleGrammarMode={toggleGrammarMode}
             />
             {operation === 'problemSolving' && (
@@ -292,8 +269,11 @@ const AIChat = ({ documentId }) => {
                     {translations[language].loadConversation}
                 </Button>
             </div>
+=======
+                toggleGrammarMode={() => setGrammarMode(!grammarMode)}
+            />
+>>>>>>> 2423003869e18c5a13aa22752dad3363e3b007bb
             <TagManager tags={tags} onAddTag={handleAddTag} />
-            <ConversationCategories />
         </div>
     );
 };

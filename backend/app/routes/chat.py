@@ -84,12 +84,6 @@ def send_chat_message(document_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@chat.route('/categories', methods=['GET'])
-@jwt_required()
-def get_conversation_categories():
-    categories = ConversationCategory.query.all()
-    return jsonify([{"id": cat.id, "name": cat.name} for cat in categories]), 200
-
 @chat.route('/feedback', methods=['POST'])
 @jwt_required()
 def submit_feedback():
