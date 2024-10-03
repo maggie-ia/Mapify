@@ -2,6 +2,10 @@ from app.models.user import User
 from app.models.membership import Membership
 from app import db
 from datetime import datetime, timedelta
+from app.utils.exceptions import MembershipError
+import logging
+
+logger = logging.getLogger(__name__)
 
 def can_use_problem_solving(user_id):
     user = User.query.get(user_id)
@@ -12,28 +16,17 @@ def get_problem_solving_limit(user_id):
     return user.get_problem_solving_limit()
 
 def increment_problem_solving_usage(user_id):
-    user = User.query.get(user_id)
-    # Implementar la lógica para incrementar el uso de la resolución de problemas
-    # Esto dependerá de cómo decidas rastrear el uso (por ejemplo, un nuevo campo en el modelo de usuario)
-    db.session.commit()
+    try:
+        user = User.query.get(user_id)
+        user.problem_solving_count += 1
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error al incrementar el uso de resolución de problemas: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al actualizar el uso de resolución de problemas")
 
 def can_perform_operation(user_id, operation_type):
     user = User.query.get(user_id)
-
-def can_use_problem_solving(user_id):
-    user = User.query.get(user_id)
-    return user.can_use_problem_solving()
-
-def get_problem_solving_limit(user_id):
-    user = User.query.get(user_id)
-    return user.get_problem_solving_limit()
-
-def increment_problem_solving_usage(user_id):
-    user = User.query.get(user_id)
-    # Implementar la lógica para incrementar el uso de la resolución de problemas
-    # Esto dependerá de cómo decidas rastrear el uso (por ejemplo, un nuevo campo en el modelo de usuario)
-    db.session.commit()
-
     if user.membership_type == 'premium':
         return True
     elif user.membership_type == 'basic':
@@ -45,13 +38,18 @@ def increment_problem_solving_usage(user_id):
     return False
 
 def increment_operation(user_id, operation_type):
-    user = User.query.get(user_id)
-    if operation_type == 'chat':
-        user.chat_usage_count += 1
-        if user.chat_usage_reset is None or datetime.utcnow() - user.chat_usage_reset > timedelta(days=30):
-            user.chat_usage_count = 1
-            user.chat_usage_reset = datetime.utcnow()
-    db.session.commit()
+    try:
+        user = User.query.get(user_id)
+        if operation_type == 'chat':
+            user.chat_usage_count += 1
+            if user.chat_usage_reset is None or datetime.utcnow() - user.chat_usage_reset > timedelta(days=30):
+                user.chat_usage_count = 1
+                user.chat_usage_reset = datetime.utcnow()
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error al incrementar la operación: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al actualizar el uso de operaciones")
 
 def get_membership_info(user_id):
     user = User.query.get(user_id)
@@ -61,20 +59,30 @@ def get_membership_info(user_id):
     return membership_info
 
 def update_membership(user_id, new_membership_type, new_duration):
-    user = User.query.get(user_id)
-    current_price = Membership.get_price(new_membership_type, new_duration)
-    user.update_membership(new_membership_type, new_duration, current_price)
-    updated_info = user.get_membership_info()
-    return updated_info
+    try:
+        user = User.query.get(user_id)
+        current_price = Membership.get_price(new_membership_type, new_duration)
+        user.update_membership(new_membership_type, new_duration, current_price)
+        updated_info = user.get_membership_info()
+        return updated_info
+    except Exception as e:
+        logger.error(f"Error al actualizar la membresía: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al actualizar la membresía")
 
 def can_export(user_id):
     user = User.query.get(user_id)
     return user.can_export()
 
 def increment_export(user_id):
-    user = User.query.get(user_id)
-    user.increment_export()
-    add_usage_history(user_id, 'export')
+    try:
+        user = User.query.get(user_id)
+        user.increment_export()
+        add_usage_history(user_id, 'export')
+    except Exception as e:
+        logger.error(f"Error al incrementar la exportación: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al actualizar el uso de exportaciones")
 
 def can_translate_to_language(user_id, language):
     user = User.query.get(user_id)
@@ -85,14 +93,24 @@ def get_page_limit(user_id):
     return user.get_page_limit()
 
 def start_trial(user_id, days=14):
-    user = User.query.get(user_id)
-    user.start_trial(days)
-    db.session.commit()
+    try:
+        user = User.query.get(user_id)
+        user.start_trial(days)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error al iniciar el período de prueba: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al iniciar el período de prueba")
 
 def add_usage_history(user_id, operation_type, details=None):
-    new_history = UsageHistory(user_id=user_id, operation_type=operation_type, details=details)
-    db.session.add(new_history)
-    db.session.commit()
+    try:
+        new_history = UsageHistory(user_id=user_id, operation_type=operation_type, details=details)
+        db.session.add(new_history)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error al añadir historial de uso: {str(e)}")
+        db.session.rollback()
+        raise MembershipError("Error al registrar el historial de uso")
 
 def get_usage_history(user_id):
     return UsageHistory.query.filter_by(user_id=user_id).order_by(UsageHistory.timestamp.desc()).all()
