@@ -1,18 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Alert } from "./ui/alert";
-import { uploadFile, processOCR } from '../services/fileService';
+import { uploadFile } from '../services/fileService';
 import { useAuth } from '../hooks/useAuth';
 import FileSizeLimitInfo from './FileSizeLimitInfo';
 import ProgressBar from './ProgressBar';
 import { toast } from 'react-hot-toast';
+import { fileUploadSchema } from '../utils/validations';
 
 const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
     const [error, setError] = useState('');
-    const [warning, setWarning] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const { language } = useLanguage();
@@ -24,82 +24,48 @@ const FileUpload = ({ onFileUploaded }) => {
             selectFile: 'Seleccionar archivo',
             upload: 'Subir',
             uploading: 'Subiendo...',
-            processing: 'Procesando OCR...',
             fileSelected: 'Archivo seleccionado:',
             noFileSelected: 'Ningún archivo seleccionado',
             invalidFileType: 'Tipo de archivo no válido. Por favor, seleccione un archivo PDF, TXT o DOCX.',
+            fileSizeExceeded: 'El tamaño del archivo excede el límite permitido para su membresía.',
             uploadSuccess: 'Archivo subido con éxito',
             uploadError: 'Error al subir el archivo',
-            fileSizeExceeded: 'El tamaño del archivo excede el límite permitido para su membresía.',
-            fileSizeWarning: 'El archivo está cerca del límite de tamaño permitido.',
-            ocrError: 'Error al procesar el OCR del archivo',
         },
         en: {
             title: 'Upload File',
             selectFile: 'Select file',
             upload: 'Upload',
             uploading: 'Uploading...',
-            processing: 'Processing OCR...',
             fileSelected: 'File selected:',
             noFileSelected: 'No file selected',
             invalidFileType: 'Invalid file type. Please select a PDF, TXT, or DOCX file.',
+            fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
             uploadSuccess: 'File uploaded successfully',
             uploadError: 'Error uploading file',
-            fileSizeExceeded: 'File size exceeds the limit allowed for your membership.',
-            fileSizeWarning: 'The file is close to the allowed size limit.',
-            ocrError: 'Error processing OCR for the file',
         },
         fr: {
             title: 'Télécharger un fichier',
             selectFile: 'Sélectionner un fichier',
             upload: 'Télécharger',
             uploading: 'Téléchargement en cours...',
-            processing: 'Traitement OCR en cours...',
             fileSelected: 'Fichier sélectionné :',
             noFileSelected: 'Aucun fichier sélectionné',
             invalidFileType: 'Type de fichier non valide. Veuillez sélectionner un fichier PDF, TXT ou DOCX.',
+            fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
             uploadSuccess: 'Fichier téléchargé avec succès',
             uploadError: 'Erreur lors du téléchargement du fichier',
-            fileSizeExceeded: 'La taille du fichier dépasse la limite autorisée pour votre abonnement.',
-            fileSizeWarning: 'Le fichier est proche de la limite de taille autorisée.',
-            ocrError: 'Erreur lors du traitement OCR du fichier',
         }
     };
 
-    const getFileSizeLimit = (membershipType) => {
-        switch (membershipType) {
-            case 'premium':
-                return 50 * 1024 * 1024; // 50MB for premium
-            case 'basic':
-            case 'free':
-            default:
-                return 16 * 1024 * 1024; // 16MB for basic and free
-        }
-    };
-
-    const handleFileChange = (event) => {
+    const handleFileChange = async (event) => {
         const selectedFile = event.target.files[0];
-        const allowedTypes = ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
-        const maxSize = getFileSizeLimit(user.membership_type);
-        
-        if (selectedFile && allowedTypes.includes(selectedFile.type)) {
-            if (selectedFile.size > maxSize) {
-                setError(translations[language].fileSizeExceeded);
-                setFile(null);
-                setWarning('');
-            } else {
-                setFile(selectedFile);
-                setError('');
-                if (selectedFile.size > maxSize * 0.9) {
-                    setWarning(translations[language].fileSizeWarning);
-                } else {
-                    setWarning('');
-                }
-            }
-        } else {
+        try {
+            await fileUploadSchema.validate({ file: selectedFile });
+            setFile(selectedFile);
+            setError('');
+        } catch (err) {
             setFile(null);
-            setError(translations[language].invalidFileType);
-            setWarning('');
+            setError(err.message);
         }
     };
 
@@ -114,8 +80,6 @@ const FileUpload = ({ onFileUploaded }) => {
                 onFileUploaded(response);
                 setIsUploading(false);
                 setFile(null);
-                setWarning('');
-                localStorage.setItem('uploadedFile', file);
                 toast.success(translations[language].uploadSuccess);
             } catch (error) {
                 setError(error.message || translations[language].uploadError);
@@ -135,7 +99,6 @@ const FileUpload = ({ onFileUploaded }) => {
                 className="mb-4"
             />
             {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
-            {warning && <Alert variant="warning" className="mb-4">{warning}</Alert>}
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}
@@ -153,9 +116,7 @@ const FileUpload = ({ onFileUploaded }) => {
             </Button>
             {isUploading && (
                 <div className="mt-4">
-                    <p className="mb-2 text-quaternary">
-                        {file.type === 'application/pdf' ? translations[language].processing : translations[language].uploading}
-                    </p>
+                    <p className="mb-2 text-quaternary">{translations[language].uploading}</p>
                     <ProgressBar progress={progress} />
                 </div>
             )}
