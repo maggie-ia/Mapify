@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Alert } from "./ui/alert";
 import { uploadFile } from '../services/fileService';
 import { useAuth } from '../hooks/useAuth';
 import FileSizeLimitInfo from './FileSizeLimitInfo';
 import ProgressBar from './ProgressBar';
-import { toast } from 'react-hot-toast';
 import { fileUploadSchema } from '../utils/validations';
 
 const FileUpload = ({ onFileUploaded }) => {
     const [file, setFile] = useState(null);
-    const [error, setError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isValid, setIsValid] = useState(false);
     const { language } = useLanguage();
     const { user } = useAuth();
+    const { addNotification } = useNotification();
 
     const translations = {
         es: {
@@ -65,17 +64,15 @@ const FileUpload = ({ onFileUploaded }) => {
     const validateFile = async () => {
         if (!file) {
             setIsValid(false);
-            setError('');
             return;
         }
 
         try {
             await fileUploadSchema.validate({ file });
             setIsValid(true);
-            setError('');
         } catch (err) {
             setIsValid(false);
-            setError(err.message);
+            addNotification('error', err.message);
         }
     };
 
@@ -96,11 +93,10 @@ const FileUpload = ({ onFileUploaded }) => {
             onFileUploaded(response);
             setIsUploading(false);
             setFile(null);
-            toast.success(translations[language].uploadSuccess);
+            addNotification('success', translations[language].uploadSuccess);
         } catch (error) {
-            setError(error.message || translations[language].uploadError);
             setIsUploading(false);
-            toast.error(error.message || translations[language].uploadError);
+            addNotification('error', error.message || translations[language].uploadError);
         }
     };
 
@@ -113,7 +109,6 @@ const FileUpload = ({ onFileUploaded }) => {
                 accept=".pdf,.txt,.docx"
                 className="mb-4"
             />
-            {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
             {file && (
                 <p className="mb-4 text-quaternary">
                     {translations[language].fileSelected} {file.name}
