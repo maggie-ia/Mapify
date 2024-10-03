@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from config import Config
 from .config.logging_config import setup_logging
+import logging
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -19,14 +20,16 @@ def create_app(config_class=Config):
 
     setup_logging(app)
 
-    from app.routes import main
+    from app.routes import main, auth, text_processing, membership, chat
     app.register_blueprint(main)
-
-    from app.routes import auth
     app.register_blueprint(auth, url_prefix='/auth')
-
-    from app.routes import text_processing
     app.register_blueprint(text_processing, url_prefix='/api')
+    app.register_blueprint(membership, url_prefix='/membership')
+    app.register_blueprint(chat, url_prefix='/chat')
+
+    # Configurar el logger para la aplicación
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Mapify application startup')
 
     return app
 

@@ -21,6 +21,8 @@ nlp = spacy.load("es_core_news_sm")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('en-US')
 
+logger = logging.getLogger(__name__)
+
 def identify_problems(text):
     """
     Identifica problemas matemáticos, físicos o químicos en el texto.
@@ -105,12 +107,20 @@ def get_additional_resources(problem_type):
     ]
 
 def summarize_text(text, max_length=150, min_length=50):
-    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-    return summary[0]['summary_text']
+    try:
+        summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        logger.error(f"Error al resumir el texto: {str(e)}")
+        raise
 
 def paraphrase_text(text):
-    # Implementar la lógica de paráfrasis aquí
-    return f"Paráfrasis de: {text}"
+    try:
+        paraphrased = paraphraser(text, max_length=len(text), do_sample=True, top_k=50, top_p=0.95, num_return_sequences=1)[0]['generated_text']
+        return paraphrased
+    except Exception as e:
+        logger.error(f"Error al parafrasear el texto: {str(e)}")
+        raise
 
 def synthesize_text(text):
     # Implementar la lógica de síntesis aquí
@@ -138,10 +148,6 @@ def generate_concept_map(text):
     
     return f"data:image/png;base64,{img_str}"
 
-def translate_text(text, target_language):
-    translator = GoogleTranslator(source='auto', target=target_language)
-    return translator.translate(text)
-
 def check_grammar(text):
     matches = tool.check(text)
     return [str(error) for error in matches]
@@ -166,24 +172,37 @@ def extract_text_from_file(file_path):
 def process_text(user_id, operation, text, target_language=None):
     user = User.query.get(user_id)
     if not user:
-        current_app.logger.error(f"User not found: {user_id}")
-        return {"error": "User not found"}, 404
+        logger.error(f"Usuario no encontrado: {user_id}")
+        return {"error": "Usuario no encontrado"}, 404
 
     try:
         if operation == 'translate':
             if not user.can_translate_to_language(target_language):
-                error_message = f"User {user_id} attempted unauthorized translation to {target_language}"
+                error_message = f"El usuario {user_id} intentó una traducción no autorizada al idioma {target_language}"
+                logger.warning(error_message)
                 user.log_error(error_message)
-                return {"error": "Unauthorized translation language"}, 403
+                return {"error": "Idioma de traducción no autorizado"}, 403
             result = translate_text(text, target_language)
+        elif operation == 'summarize':
+            result = summarize_text(text)
+        elif operation == 'paraphrase':
+            result = paraphrase_text(text)
+        elif operation == 'synthesize':
+            result = synthesize_text(text)
+        elif operation == 'conceptMap':
+            result = generate_concept_map(text)
+        elif operation == 'relevantPhrases':
+            result = generate_relevant_phrases(text)
+        elif operation == 'problemSolving':
+            result = solve_problem(text)
         else:
-            # ... keep existing code (other operations)
+            logger.warning(f"Operación no soportada: {operation}")
+            return {"error": "Operación no soportada"}, 400
 
+        logger.info(f"Operación {operation} completada con éxito para el usuario {user_id}")
         return {"result": result}, 200
     except Exception as e:
-        error_message = f"Error processing {operation} for user {user_id}: {str(e)}"
+        error_message = f"Error al procesar {operation} para el usuario {user_id}: {str(e)}"
+        logger.error(error_message)
         user.log_error(error_message)
-        current_app.logger.error(error_message)
-        return {"error": "An error occurred while processing your request"}, 500
-
-# ... keep existing code (other functions)
+        return {"error": "Ocurrió un error al procesar su solicitud"}, 500
