@@ -30,6 +30,7 @@ class Config:
     # Configuración de subida de archivos
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER") or os.path.join(os.path.dirname(__file__), 'uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", 16 * 1024 * 1024))  # 16 MB por defecto
 
     # Configuración de ipapi
     IPAPI_API_KEY = os.getenv("IPAPI_API_KEY")

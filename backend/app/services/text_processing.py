@@ -1,7 +1,10 @@
+import re
+from transformers import pipeline
+import spacy
 import PyPDF2
 from io import BytesIO
-from transformers import pipeline
 import docx
+<<<<<<< HEAD
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import spacy
@@ -20,59 +23,52 @@ summarizer = pipeline("summarization")
 nlp = spacy.load("es_core_news_sm")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('en-US')
+=======
 
-def extract_text_from_pdf(file_content):
-    """
-    Extrae el texto de un archivo PDF.
-    """
-    pdf_file = BytesIO(file_content)
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+summarizer = pipeline("summarization")
+nlp = spacy.load("es_core_news_sm")
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
 
-def extract_text_from_docx(file_content):
-    """
-    Extrae el texto de un archivo DOCX.
-    """
-    doc = docx.Document(BytesIO(file_content))
-    text = ""
-    for para in doc.paragraphs:
-        text += para.text + "\n"
-    return text
+# ... keep existing code (extract_text_from_pdf, extract_text_from_docx, process_file, summarize_text)
 
-def process_file(file):
+def identify_problems(text):
     """
-    Procesa el archivo subido y extrae su contenido.
+    Identifica problemas matemáticos, físicos o químicos en el texto.
     """
-    if file.filename.endswith('.pdf'):
-        return extract_text_from_pdf(file.read())
-    elif file.filename.endswith('.txt'):
-        return file.read().decode('utf-8')
-    elif file.filename.endswith('.docx'):
-        return extract_text_from_docx(file.read())
-    else:
-        return "Formato de archivo no soportado."
+    math_pattern = r'\b(?:calcul[ae]|encuentr[ae]|determin[ae])\b.*?(?:\d+|\bx\b|\by\b)'
+    physics_pattern = r'\b(?:velocidad|aceleración|fuerza|energía)\b.*?(?:\d+\s*[a-zA-Z]+/?[a-zA-Z]*|\d+\s*\w+\s*por\s*\w+)'
+    chemistry_pattern = r'\b(?:mol[es]?|concentración|pH)\b.*?(?:\d+(?:\.\d+)?|\w+\s*\+\s*\w+)'
 
-def summarize_text(text, max_length=150, min_length=50):
-    """
-    Resume el texto dado utilizando la biblioteca de transformers.
-    """
-    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-    return summary[0]['summary_text']
+    problems = []
+    for sentence in nlp(text).sents:
+        sentence_text = sentence.text
+        if re.search(math_pattern, sentence_text, re.IGNORECASE):
+            problems.append(('matemática', sentence_text))
+        elif re.search(physics_pattern, sentence_text, re.IGNORECASE):
+            problems.append(('física', sentence_text))
+        elif re.search(chemistry_pattern, sentence_text, re.IGNORECASE):
+            problems.append(('química', sentence_text))
 
-def paraphrase_text(text, max_length=100):
-    """
-    Parafrasea el texto dado utilizando la biblioteca de transformers.
-    """
-    paraphrased = paraphraser(text, max_length=max_length, num_return_sequences=1)
-    return paraphrased[0]['generated_text']
+    return problems
 
-def synthesize_text(text, max_length=200, min_length=100):
+def solve_problem(problem):
     """
-    Sintetiza el texto dado combinando resumen y paráfrasis.
+    Intenta resolver un problema matemático, físico o químico.
     """
+    # Esta es una implementación básica. En un sistema real, se utilizaría
+    # un motor de resolución de problemas más avanzado.
+    return f"Para resolver el problema '{problem}', se recomienda seguir estos pasos:\n" \
+           f"1. Identificar las variables y datos conocidos.\n" \
+           f"2. Determinar la fórmula o ecuación apropiada.\n" \
+           f"3. Sustituir los valores conocidos en la ecuación.\n" \
+           f"4. Resolver la ecuación para encontrar la incógnita.\n" \
+           f"5. Verificar que la solución tenga sentido en el contexto del problema."
+
+def explain_problem(problem):
+    """
+    Proporciona una explicación detallada de cómo abordar un problema.
+    """
+<<<<<<< HEAD
     summary = summarize_text(text, max_length=max_length, min_length=min_length)
     synthesis = paraphrase_text(summary, max_length=max_length)
     return synthesis
@@ -181,6 +177,8 @@ def explain_problem(problem):
     """
     Proporciona una explicación detallada de cómo abordar un problema.
     """
+=======
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
     return f"Para entender y resolver el problema '{problem}', considera lo siguiente:\n" \
            f"1. Contexto: Identifica el área de estudio (matemáticas, física, química) y los conceptos relevantes.\n" \
            f"2. Datos: Enumera toda la información proporcionada en el enunciado del problema.\n" \

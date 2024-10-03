@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
+<<<<<<< HEAD
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -16,10 +17,19 @@ import { toast } from 'react-hot-toast';
 import { debounce } from 'lodash';
 import { logChatInteraction } from '../services/analyticsService';
 import { validateInput, encryptSensitiveData, reportSuspiciousActivity } from '../services/securityService';
+=======
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
 import ChatInput from './ChatInput';
 import ChatMessages from './ChatMessages';
 import OperationSelector from './OperationSelector';
 import SuggestedQuestions from './SuggestedQuestions';
+<<<<<<< HEAD
+=======
+import { toast } from 'react-hot-toast';
+import { debounce } from 'lodash';
+import { logChatInteraction } from '../services/analyticsService';
+import { validateInput, encryptSensitiveData, reportSuspiciousActivity } from '../services/securityService';
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
 
 const AIChat = ({ documentId }) => {
     const [messages, setMessages] = useState([]);
@@ -29,6 +39,7 @@ const AIChat = ({ documentId }) => {
     const { user } = useAuth();
     const { language } = useLanguage();
 
+<<<<<<< HEAD
     const translations = {
         es: {
             placeholder: "Escribe tu pregunta aquí...",
@@ -87,6 +98,8 @@ const AIChat = ({ documentId }) => {
         }
     };
 
+=======
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
     const { data: chatData, isLoading, error, refetch } = useQuery({
         queryKey: ['chatConversation', documentId],
         queryFn: () => axios.get(`/api/chat/${documentId}`).then(res => res.data),
@@ -114,9 +127,15 @@ const AIChat = ({ documentId }) => {
         },
         onError: (error) => {
             if (error.response && error.response.status === 403) {
+<<<<<<< HEAD
                 toast.error(translations[language].usageLimitReached);
             } else {
                 toast.error(translations[language].errorSending);
+=======
+                toast.error('Has alcanzado el límite de uso para tu membresía');
+            } else {
+                toast.error('Error al enviar el mensaje');
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
             }
             console.error('Error sending message:', error);
             reportSuspiciousActivity(user.id, { action: 'message_send_error', error: error.message });
@@ -137,6 +156,7 @@ const AIChat = ({ documentId }) => {
             toast.error('Entrada inválida detectada. Por favor, intenta de nuevo.');
         }
     }, 300), [inputMessage, operation, chatData, user.id]);
+<<<<<<< HEAD
 
     const handleFeedback = useCallback((messageId, isPositive) => {
         setFeedback({ messageId, isPositive });
@@ -177,19 +197,19 @@ const AIChat = ({ documentId }) => {
             })
             .catch(() => toast.error('Error adding tag'));
     }, [documentId, user.id]);
+=======
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
 
     if (user.membership_type !== 'premium') {
-        return <p className="text-quaternary">{translations[language].notAvailable}</p>;
+        return <p className="text-quaternary">El chat de IA solo está disponible para usuarios premium.</p>;
     }
 
-    if (isLoading) return <p>{translations[language].loading}</p>;
-    if (error) {
-        console.error('Error loading chat:', error);
-        return <p>{translations[language].error}</p>;
-    }
+    if (isLoading) return <p>Cargando...</p>;
+    if (error) return <p>Error al cargar el chat</p>;
 
     return (
         <div className="w-full max-w-md mx-auto mt-8 p-4 bg-quinary rounded-lg shadow-lg">
+<<<<<<< HEAD
             <ChatPersonalization />
             <Select onValueChange={setOperation} defaultValue={operation}>
                 <SelectTrigger className="w-full mb-4">
@@ -260,6 +280,17 @@ const AIChat = ({ documentId }) => {
             </div>
             <TagManager tags={tags} onAddTag={handleAddTag} />
             <ConversationCategories />
+=======
+            <OperationSelector operation={operation} setOperation={setOperation} />
+            <ChatMessages messages={messages} handleProblemSolving={handleProblemSolving} handleExplainProblem={handleExplainProblem} />
+            <SuggestedQuestions questions={suggestedQuestions} setInputMessage={setInputMessage} />
+            <ChatInput 
+                inputMessage={inputMessage} 
+                setInputMessage={setInputMessage} 
+                handleSendMessage={handleSendMessage} 
+                isLoading={sendMessageMutation.isLoading}
+            />
+>>>>>>> 1dfd9a0312a6f7d4d3a14961b8a4de2905168e49
         </div>
     );
 };
