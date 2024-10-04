@@ -13,6 +13,22 @@ class Config:
     DB_USER = os.environ.get('DB_USER')
     DB_PASSWORD = os.environ.get('DB_PASSWORD')
     DB_NAME = os.environ.get('DB_NAME')
+
+     # Configuración de SMTP
+    SMTP_SERVER = os.environ.get('SMTP_SERVER')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
+    FROM_EMAIL = os.environ.get('FROM_EMAIL')
+
+     # URL del frontend
+    FRONTEND_URL = os.environ.get('FRONTEND_URL')
+
+    
+    # Configuración de caché
+    CACHE_TYPE = "simple"  # Puedes cambiarlo a "redis" si prefieres usar Redis
+    CACHE_DEFAULT_TIMEOUT = 300
+
     
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
