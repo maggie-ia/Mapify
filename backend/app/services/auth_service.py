@@ -205,8 +205,23 @@ def generate_reset_token():
     return secrets.token_urlsafe(32)
 
 def verify_phone_number(phone_number, verification_code):
-    # Esta función debería implementar la lógica para verificar el código enviado al teléfono
-    # Por ahora, simplemente retornamos True para simular una verificación exitosa
-    return True
-
-# ... keep existing code
+    try:
+        # Verificar el código de verificación con Firebase
+        decoded_token = firebase_auth.verify_phone_number(phone_number, verification_code)
+        uid = decoded_token['uid']
+        
+        # Buscar o crear el usuario en nuestra base de datos
+        user = User.query.filter_by(firebase_uid=uid).first()
+        if not user:
+            user = register_user(username=phone_number, email=None, password=None, firebase_uid=uid)
+        
+        # Marcar el número de teléfono como verificado
+        user.phone_verified = True
+        user.phone_number = phone_number
+        db.session.commit()
+        
+        log_user_activity(user.id, 'phone_verified')
+        return True
+    except Exception as e:
+        logger.error(f"Error al verificar el número de teléfono: {str(e)}")
+        return False
