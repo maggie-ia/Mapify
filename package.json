@@ -15,6 +15,7 @@
     "tailwindcss": "^3.4.13",
     "tesseract.js": "^5.1.1",
     "transformers": "^3.1.0",
+    "twilio": "^5.3.3",
     "yup": "^1.4.0"
   },
   "name": "mapify-c96890da",
