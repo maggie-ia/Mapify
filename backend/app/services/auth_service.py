@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+import os
+from flask import current_app
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 from app.models.user import User, UserActivity
 from app.utils.exceptions import AuthenticationError
 from flask_jwt_extended import create_access_token, create_refresh_token
@@ -5,6 +10,7 @@ from werkzeug.security import check_password_hash
 from flask import current_app
 import logging
 from datetime import datetime, timedelta
+<<<<<<< HEAD
 from app import db
 import pyotp
 import re
@@ -26,6 +32,17 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 
+=======
+import pyotp
+import re
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 
 logger = logging.getLogger(__name__)
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
@@ -71,6 +88,7 @@ def verify_firebase_token(token):
         logger.error(f"Error de autenticación con Firebase: {str(e)}")
         raise AuthenticationError("Error durante la autenticación con Firebase")
 
+<<<<<<< HEAD
 def authenticate_user(email, password):
     try:
         user = User.query.filter_by(email=email).first()
@@ -87,6 +105,42 @@ def authenticate_user(email, password):
         logger.error(f"Error de autenticación: {str(e)}")
         raise AuthenticationError("Error durante la autenticación")
 
+=======
+# Inicializar Firebase Admin SDK
+cred = credentials.Certificate({
+    "type": "service_account",
+    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
+    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL")
+})
+firebase_admin.initialize_app(cred)
+
+def verify_firebase_token(token):
+    try:
+        decoded_token = firebase_auth.verify_id_token(token)
+        uid = decoded_token['uid']
+        user = User.query.filter_by(firebase_uid=uid).first()
+        if not user:
+            # Si el usuario no existe en nuestra base de datos, lo creamos
+            email = decoded_token.get('email')
+            username = decoded_token.get('name', email.split('@')[0])
+            user = register_user(username, email, None, uid)
+        
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+        log_user_activity(user.id, 'login')
+        return {'access_token': access_token, 'refresh_token': refresh_token}
+    except Exception as e:
+        logger.error(f"Error de autenticación con Firebase: {str(e)}")
+        raise AuthenticationError("Error durante la autenticación con Firebase")
+
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 def register_user(username, email, password=None, firebase_uid=None):
     try:
         existing_user = User.query.filter_by(email=email).first()
@@ -112,7 +166,11 @@ def register_user(username, email, password=None, firebase_uid=None):
         logger.error(f"Error de registro: {str(e)}")
         db.session.rollback()
         raise AuthenticationError("Error durante el registro")
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 def verify_email(user_id, token):
     user = User.query.get(user_id)
     if user and user.verify_email(token):
@@ -122,7 +180,10 @@ def verify_email(user_id, token):
         return True
     return False
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 def enable_two_factor(user_id):
     user = User.query.get(user_id)
     if user:
@@ -143,7 +204,11 @@ def verify_two_factor(user_id, token):
         return {'access_token': access_token, 'refresh_token': refresh_token}
     raise AuthenticationError("Código 2FA inválido")
 
+<<<<<<< HEAD
 def initiate_password_reset(email):
+=======
+def reset_password(email):
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
     user = User.query.filter_by(email=email).first()
     if user:
         reset_token = generate_reset_token()
@@ -151,6 +216,7 @@ def initiate_password_reset(email):
         user.password_reset_expiration = datetime.utcnow() + timedelta(hours=1)
         db.session.commit()
         send_password_reset_email(user.email, reset_token)
+<<<<<<< HEAD
         log_user_activity(user.id, 'password_reset_initiated')
         return True
     return False
@@ -190,6 +256,12 @@ def reset_password(token, new_password):
             return True
     return False
 
+=======
+        log_user_activity(user.id, 'password_reset_requested')
+        return True
+    return False
+
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 def change_password(user_id, old_password, new_password):
     user = User.query.get(user_id)
     if user and user.check_password(old_password):
@@ -200,6 +272,7 @@ def change_password(user_id, old_password, new_password):
             return True
     return False
 
+<<<<<<< HEAD
 def revoke_token(jti):
     try:
         revoked_token = RevokedToken(jti=jti)
@@ -216,6 +289,8 @@ def is_token_revoked(jti):
 
 
 
+=======
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 def logout_all_devices(user_id):
     user = User.query.get(user_id)
     if user:
@@ -253,6 +328,7 @@ def send_password_reset_email(email, token):
     body = f"Para restablecer tu contraseña, haz clic en el siguiente enlace: {current_app.config['FRONTEND_URL']}/reset-password?token={token}"
     send_email(email, subject, body)
 
+<<<<<<< HEAD
 def generate_reset_token():
     return secrets.token_urlsafe(32)
 
@@ -324,3 +400,54 @@ def verify_2fa(user_id, token):
     if user and user.verify_2fa(token):
         return True
     return False
+=======
+def initiate_password_reset(email):
+    user = User.query.filter_by(email=email).first()
+    if user:
+        reset_token = generate_reset_token()
+        user.password_reset_token = reset_token
+        user.password_reset_expiration = datetime.utcnow() + timedelta(hours=1)
+        db.session.commit()
+        send_password_reset_email(user.email, reset_token)
+        log_user_activity(user.id, 'password_reset_initiated')
+        return True
+    return False
+
+def reset_password(token, new_password):
+    user = User.query.filter_by(password_reset_token=token).first()
+    if user and user.password_reset_expiration > datetime.utcnow():
+        if is_password_secure(new_password):
+            user.set_password(new_password)
+            user.password_reset_token = None
+            user.password_reset_expiration = None
+            db.session.commit()
+            log_user_activity(user.id, 'password_reset_completed')
+            return True
+    return False
+
+def send_email(to_email, subject, body):
+    smtp_server = current_app.config['SMTP_SERVER']
+    smtp_port = current_app.config['SMTP_PORT']
+    smtp_username = current_app.config['SMTP_USERNAME']
+    smtp_password = current_app.config['SMTP_PASSWORD']
+    from_email = current_app.config['FROM_EMAIL']
+
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+        logger.info(f"Correo enviado exitosamente a {to_email}")
+    except Exception as e:
+        logger.error(f"Error al enviar correo a {to_email}: {str(e)}")
+        raise
+
+def generate_reset_token():
+    return secrets.token_urlsafe(32)
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d

@@ -54,3 +54,13 @@ class Config:
     # Configuración de Hugging Face
     HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
     HUGGINGFACE_MODEL = os.getenv("HUGGINGFACE_MODEL") or "facebook/bart-large-cnn"
+
+    # Configuración de SMTP
+    SMTP_SERVER = os.environ.get('SMTP_SERVER')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
+    FROM_EMAIL = os.environ.get('FROM_EMAIL')
+
+    # URL del frontend
+    FRONTEND_URL = os.environ.get('FRONTEND_URL')

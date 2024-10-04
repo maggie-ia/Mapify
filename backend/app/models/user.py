@@ -4,11 +4,15 @@ from datetime import datetime, timedelta
 import pyotp
 import logging
 import secrets
+<<<<<<< HEAD
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import secrets
 
 logger = logging.getLogger(__name__)
+=======
+import pyotp
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,12 +42,15 @@ class User(db.Model):
     email_verification_sent_at = db.Column(db.DateTime)
     reset_token = db.Column(db.String(64))
     reset_token_expiration = db.Column(db.DateTime)
+<<<<<<< HEAD
     active_sessions = db.Column(db.JSON, default=[])
     permissions = db.Column(db.JSON, default=[])
     phone_number = db.Column(db.String(20))
     phone_verified = db.Column(db.Boolean, default=False)
     phone_verification_code = db.Column(db.String(6))
     phone_verification_expiration = db.Column(db.DateTime)
+=======
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 
     def get_max_file_size(self):
         if self.membership_type == 'premium':
@@ -68,6 +75,7 @@ class User(db.Model):
             self.failed_login_attempts += 1
             if self.failed_login_attempts >= 5:
                 self.account_locked_until = datetime.utcnow() + timedelta(minutes=30)
+<<<<<<< HEAD
             db.session.commit()
             return False
         self.failed_login_attempts = 0
@@ -207,41 +215,67 @@ class User(db.Model):
         if now - self.chat_usage_reset > timedelta(days=30):
             self.chat_usage_count = 0
             self.chat_usage_reset = now
+=======
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
             db.session.commit()
+            return False
+        self.failed_login_attempts = 0
+        db.session.commit()
+        return True
 
-    def can_export(self):
-        self._reset_counters_if_needed()
-        if self.is_trial or self.membership_type == 'premium':
+    def generate_email_verification_token(self):
+        token = secrets.token_urlsafe(32)
+        self.email_verification_token = token
+        self.email_verification_sent_at = datetime.utcnow()
+        db.session.commit()
+        return token
+
+    def verify_email(self, token):
+        if self.email_verification_token == token and \
+           datetime.utcnow() - self.email_verification_sent_at < timedelta(hours=24):
+            self.email_verified = True
+            self.email_verification_token = None
+            db.session.commit()
             return True
-        elif self.membership_type == 'basic':
-            return self.weekly_exports < 10
-        else:  # free
-            return self.weekly_exports < 1
+        return False
 
-    def increment_operation(self):
-        self._reset_counters_if_needed()
-        self.weekly_operations += 1
+    def enable_two_factor(self):
+        self.two_factor_secret = pyotp.random_base32()
+        self.two_factor_enabled = True
         db.session.commit()
+        return self.two_factor_secret
 
-    def increment_export(self):
-        self._reset_counters_if_needed()
-        self.weekly_exports += 1
+    def verify_two_factor(self, token):
+        totp = pyotp.TOTP(self.two_factor_secret)
+        return totp.verify(token)
+
+    def is_password_secure(self, password):
+        if len(password) < 8:
+            return False
+        if not any(char.isupper() for char in password):
+            return False
+        if not any(char.islower() for char in password):
+            return False
+        if not any(char.isdigit() for char in password):
+            return False
+        if not any(char in "!@#$%^&*(),.?\":{}|<>" for char in password):
+            return False
+        return True
+
+    def generate_reset_token(self):
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
         db.session.commit()
+        return self.reset_token
 
-    def _reset_counters_if_needed(self):
-        now = datetime.utcnow()
-        if now - self.last_reset > timedelta(days=7):
-            self.weekly_operations = 0
-            self.weekly_exports = 0
-            self.last_reset = now
-        if now - self.monthly_reset > timedelta(days=30):
-            self.monthly_reset = now
-        if self.is_trial and now > self.trial_end_date:
-            self.end_trial()
-        if now > self.membership_end_date:
-            self.renew_membership()
-        db.session.commit()
+class UserActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    activity_type = db.Column(db.String(50), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    details = db.Column(db.String(255))
 
+<<<<<<< HEAD
     def renew_membership(self):
         if self.membership_type != 'free':
             self.membership_start_date = datetime.utcnow()
@@ -354,3 +388,6 @@ class RevokedToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+=======
+    user = db.relationship('User', backref=db.backref('activities', lazy=True))
+>>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
