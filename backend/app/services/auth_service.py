@@ -16,14 +16,15 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 
-def delete_user_account(user_id):
+
+def deactivate_user_account(user_id):
     user = User.query.get(user_id)
     if user:
-        db.session.delete(user)
-        db.session.commit()
-        log_user_activity(user_id, 'account_deleted')
-    else:
-        raise AuthenticationError("Usuario no encontrado")
+        user.deactivate_account()
+        log_user_activity(user.id, 'account_deactivated')
+        return True
+    return False
+
 
 
 logger = logging.getLogger(__name__)

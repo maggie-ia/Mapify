@@ -4,15 +4,8 @@ from datetime import datetime, timedelta
 import pyotp
 import logging
 import secrets
-<<<<<<< HEAD
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
-import secrets
 
 logger = logging.getLogger(__name__)
-=======
-import pyotp
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,15 +35,11 @@ class User(db.Model):
     email_verification_sent_at = db.Column(db.DateTime)
     reset_token = db.Column(db.String(64))
     reset_token_expiration = db.Column(db.DateTime)
-<<<<<<< HEAD
-    active_sessions = db.Column(db.JSON, default=[])
-    permissions = db.Column(db.JSON, default=[])
-    phone_number = db.Column(db.String(20))
-    phone_verified = db.Column(db.Boolean, default=False)
-    phone_verification_code = db.Column(db.String(6))
-    phone_verification_expiration = db.Column(db.DateTime)
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
+    is_active = db.Column(db.Boolean, default=True)
+
+    def deactivate_account(self):
+        self.is_active = False
+        db.session.commit()
 
     def get_max_file_size(self):
         if self.membership_type == 'premium':
@@ -75,7 +64,6 @@ class User(db.Model):
             self.failed_login_attempts += 1
             if self.failed_login_attempts >= 5:
                 self.account_locked_until = datetime.utcnow() + timedelta(minutes=30)
-<<<<<<< HEAD
             db.session.commit()
             return False
         self.failed_login_attempts = 0
@@ -215,8 +203,6 @@ class User(db.Model):
         if now - self.chat_usage_reset > timedelta(days=30):
             self.chat_usage_count = 0
             self.chat_usage_reset = now
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
             db.session.commit()
             return False
         self.failed_login_attempts = 0
@@ -261,133 +247,3 @@ class User(db.Model):
         if not any(char in "!@#$%^&*(),.?\":{}|<>" for char in password):
             return False
         return True
-
-    def generate_reset_token(self):
-        self.reset_token = secrets.token_urlsafe(32)
-        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
-        db.session.commit()
-        return self.reset_token
-
-class UserActivity(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    activity_type = db.Column(db.String(50), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    details = db.Column(db.String(255))
-
-<<<<<<< HEAD
-    def renew_membership(self):
-        if self.membership_type != 'free':
-            self.membership_start_date = datetime.utcnow()
-            if self.membership_duration == 'monthly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=30)
-            elif self.membership_duration == 'sixMonths':
-                self.membership_end_date = self.membership_start_date + timedelta(days=180)
-            elif self.membership_duration == 'yearly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=365)
-        db.session.commit()
-
-    def get_page_limit(self):
-        if self.is_trial or self.membership_type == 'premium':
-            return float('inf')  # Sin límite
-        elif self.membership_type == 'basic':
-            return 10
-        else:  # free
-            return 5
-
-    def can_translate_to_language(self, language):
-        if self.is_trial or self.membership_type == 'premium':
-            return True
-        elif self.membership_type == 'basic':
-            allowed_languages = ['en', 'es', 'fr', 'de']
-            return language in allowed_languages
-        else:  # free
-            return language in ['en', 'es']
-    
-    def log_error(self, error_message):
-        logger = logging.getLogger('mapify_error_logger')
-        logger.error(f"User {self.id} - {error_message}")   
-    
-    def can_use_problem_solving(self):
-            return True  # Disponible para todas las membresías   
-
-    def get_membership_info(self):
-        self._reset_counters_if_needed()
-        return {
-            'membership_type': self.membership_type,
-            'membership_duration': self.membership_duration,
-            'membership_price': self.membership_price,
-            'membership_start_date': self.membership_start_date.isoformat(),
-            'membership_end_date': self.membership_end_date.isoformat(),
-            'is_trial': self.is_trial,
-            'trial_end_date': self.trial_end_date.isoformat() if self.trial_end_date else None,
-            'weekly_operations_remaining': self.get_weekly_operations_remaining(),
-            'weekly_exports_remaining': self.get_weekly_exports_remaining(),
-            'page_limit': self.get_page_limit(),
-            'can_create_concept_maps': self.membership_type != 'free' or self.is_trial,
-            'concept_map_node_limit': float('inf') if self.membership_type == 'premium' or self.is_trial else 6 if self.membership_type == 'basic' else 0,
-            'chat_usage_remaining': self.get_chat_usage_remaining(),
-            'can_use_problem_solving': self.can_use_problem_solving(),
-            'problem_solving_limit': self.get_problem_solving_limit()
-        }
-
-    def get_problem_solving_limit(self):
-            if self.is_trial or self.membership_type == 'premium':
-                return float('inf')  # Sin límite
-            elif self.membership_type == 'basic':
-                return 20  # 20 usos por mes
-            else:  # free
-                return 5   # 5 usos por semana
-
-    def get_weekly_operations_remaining(self):
-        if self.is_trial or self.membership_type == 'premium':
-            return float('inf')
-        elif self.membership_type == 'basic':
-            return max(0, 10 - self.weekly_operations)
-        else:  # free
-            return max(0, 3 - self.weekly_operations)
-
-    def get_weekly_exports_remaining(self):
-        if self.is_trial or self.membership_type == 'premium':
-            return float('inf')
-        elif self.membership_type == 'basic':
-            return max(0, 10 - self.weekly_exports)
-        else:  # free
-            return max(0, 1 - self.weekly_exports)
-
-    def get_chat_usage_remaining(self):
-        if self.membership_type == 'premium':
-            return float('inf')
-        elif self.membership_type == 'basic':
-            return max(0, 50 - self.chat_usage_count)
-        else:  # free
-            return max(0, 10 - self.chat_usage_count)
-    
-    def has_permission(self, permission):
-        return permission in self.permissions
-
-    def add_permission(self, permission):
-        if permission not in self.permissions:
-            self.permissions.append(permission)
-
-    def remove_permission(self, permission):
-        if permission in self.permissions:
-            self.permissions.remove(permission)
-
-    def add_active_session(self, jti, device_info):
-        self.active_sessions.append({
-            'jti': jti,
-            'device_info': device_info,
-            'created_at': datetime.utcnow().isoformat()
-        })
-
-    def remove_active_session(self, jti):
-        self.active_sessions = [session for session in self.active_sessions if session['jti'] != jti]
-
-class RevokedToken(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    jti = db.Column(db.String(36), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-=======
-    user = db.relationship('User', backref=db.backref('activities', lazy=True))
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d

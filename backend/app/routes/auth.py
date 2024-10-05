@@ -109,6 +109,17 @@ def verify_2fa():
     except Exception as e:
         return handle_error(e)
 
+@auth_bp.route('/deactivate-account', methods=['POST'])
+@jwt_required()
+def deactivate_account():
+    user_id = get_jwt_identity()
+    try:
+        if deactivate_user_account(user_id):
+            return jsonify({"message": "Cuenta desactivada exitosamente"}), 200
+        return jsonify({"error": "No se pudo desactivar la cuenta"}), 400
+    except Exception as e:
+        return handle_error(e)
+
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password_route():
@@ -139,3 +150,4 @@ def google_login():
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 401
+
