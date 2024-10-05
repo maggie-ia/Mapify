@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from "./ui/button";
 import { useLanguage } from '../contexts/LanguageContext';
+import { toast } from 'react-hot-toast';
 import api from '../services/api';
 
 const DeleteAccount = () => {
@@ -40,13 +41,13 @@ const DeleteAccount = () => {
 
     const handleDeleteAccount = async () => {
         try {
-            await api.post('/auth/deactivate-account');
+            await api.delete('/auth/delete-account');
+            toast.success(translations[language].success);
             logout();
             navigate('/');
-            alert(translations[language].success);
         } catch (error) {
             console.error('Error deleting account:', error);
-            alert(translations[language].error);
+            toast.error(translations[language].error);
         }
     };
 
