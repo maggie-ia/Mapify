@@ -15,6 +15,7 @@ from app.services.text_operations import (
 )
 from app.extensions import cache, db
 from sqlalchemy.orm import with_lockmode
+from app.services.metrics_service import log_metric
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,9 @@ def process_text(operation, text, target_language=None):
             log_error(error_message, extra={"user_id": user_id, "target_language": target_language})
             raise TranslationError("Idioma de traducción no autorizado")
 
+        # Log the metric
+        log_metric(user_id, operation)
+
         logger.info(f"Operación {operation} completada con éxito para el usuario {user_id}")
         return result
     except Exception as e:
@@ -78,18 +82,4 @@ def process_text(operation, text, target_language=None):
     finally:
         db.session.commit()
 
-def get_writing_assistance(text, membership_type):
-    matches = tool.check(text)
-    suggestions = []
-    
-    for match in matches:
-        if membership_type == 'premium' or (membership_type == 'basic' and match.ruleIssueType in ['grammar', 'typos']):
-            suggestion = {
-                'original': text[match.offset:match.offset + match.errorLength],
-                'suggested': match.replacements[0] if match.replacements else '',
-                'message': match.message,
-                'type': match.ruleIssueType
-            }
-            suggestions.append(suggestion)
-    
-    return suggestions[:10]  # Limitar a 10 sugerencias para evitar sobrecarga
+# ... keep existing code

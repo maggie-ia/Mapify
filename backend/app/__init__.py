@@ -30,13 +30,14 @@ def create_app(config_class=Config):
     setup_logging(app)
 
     from .routes import bp as main_bp
-    from .routes import main, auth, text_processing, membership, chat
+    from .routes import main, auth, text_processing, membership, chat, metrics
     app.register_blueprint(main_bp)
     app.register_blueprint(main)
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(text_processing, url_prefix='/api')
     app.register_blueprint(membership, url_prefix='/membership')
     app.register_blueprint(chat, url_prefix='/chat')
+    app.register_blueprint(metrics, url_prefix='/metrics')
 
     app.logger.setLevel(logging.INFO)
     app.logger.info('Mapify application startup')
