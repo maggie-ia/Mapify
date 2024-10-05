@@ -4,15 +4,10 @@ from datetime import datetime, timedelta
 import pyotp
 import logging
 import secrets
-<<<<<<< HEAD
-from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import secrets
 
 logger = logging.getLogger(__name__)
-=======
-import pyotp
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,15 +37,13 @@ class User(db.Model):
     email_verification_sent_at = db.Column(db.DateTime)
     reset_token = db.Column(db.String(64))
     reset_token_expiration = db.Column(db.DateTime)
-<<<<<<< HEAD
     active_sessions = db.Column(db.JSON, default=[])
     permissions = db.Column(db.JSON, default=[])
     phone_number = db.Column(db.String(20))
     phone_verified = db.Column(db.Boolean, default=False)
     phone_verification_code = db.Column(db.String(6))
     phone_verification_expiration = db.Column(db.DateTime)
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
+    is_active = db.Column(db.Boolean, default=True)
 
     def get_max_file_size(self):
         if self.membership_type == 'premium':
@@ -59,6 +52,10 @@ class User(db.Model):
             return 20 * 1024 * 1024  # 20 MB
         else:
             return 5 * 1024 * 1024  # 5 MB
+        
+    def deactivate_account(self):
+        self.is_active = False
+        db.session.commit()
     
     def generate_reset_token(self):
         self.reset_token = secrets.token_urlsafe(32)
@@ -75,7 +72,6 @@ class User(db.Model):
             self.failed_login_attempts += 1
             if self.failed_login_attempts >= 5:
                 self.account_locked_until = datetime.utcnow() + timedelta(minutes=30)
-<<<<<<< HEAD
             db.session.commit()
             return False
         self.failed_login_attempts = 0
@@ -215,8 +211,6 @@ class User(db.Model):
         if now - self.chat_usage_reset > timedelta(days=30):
             self.chat_usage_count = 0
             self.chat_usage_reset = now
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
             db.session.commit()
             return False
         self.failed_login_attempts = 0
@@ -275,7 +269,6 @@ class UserActivity(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     details = db.Column(db.String(255))
 
-<<<<<<< HEAD
     def renew_membership(self):
         if self.membership_type != 'free':
             self.membership_start_date = datetime.utcnow()
@@ -388,6 +381,3 @@ class RevokedToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-=======
-    user = db.relationship('User', backref=db.backref('activities', lazy=True))
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d

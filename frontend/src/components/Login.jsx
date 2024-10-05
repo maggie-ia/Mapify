@@ -4,11 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
-<<<<<<< HEAD
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
-=======
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 import { auth } from '../config/firebaseConfig';
 import axios from 'axios';
 
@@ -16,6 +12,8 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { login } = useAuth();
@@ -26,14 +24,13 @@ const Login = () => {
       email: 'Correo electrónico',
       password: 'Contraseña',
       phone: 'Número de teléfono',
+      verificationCode: 'Código de verificación',
       login: 'Iniciar sesión',
       register: '¿No tienes una cuenta? Regístrate',
-<<<<<<< HEAD
       googleLogin: 'Iniciar sesión con Google',
-      phoneLogin: 'Iniciar sesión con teléfono'
-=======
-      googleLogin: 'Iniciar sesión con Google'
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
+      phoneLogin: 'Iniciar sesión con teléfono',
+      sendCode: 'Enviar código',
+      verify: 'Verificar'
     },
     en: {
       title: 'Log in',
@@ -42,12 +39,8 @@ const Login = () => {
       phone: 'Phone number',
       login: 'Log in',
       register: "Don't have an account? Sign up",
-<<<<<<< HEAD
       googleLogin: 'Login with Google',
       phoneLogin: 'Login with phone'
-=======
-      googleLogin: 'Login with Google'
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
     },
     fr: {
       title: 'Connexion',
@@ -56,12 +49,8 @@ const Login = () => {
       phone: 'Numéro de téléphone',
       login: 'Se connecter',
       register: "Vous n'avez pas de compte ? Inscrivez-vous",
-<<<<<<< HEAD
       googleLogin: 'Se connecter avec Google',
       phoneLogin: 'Se connecter avec téléphone'
-=======
-      googleLogin: 'Se connecter avec Google'
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
     }
   };
 
@@ -79,6 +68,28 @@ const Login = () => {
     }
   };
 
+  const setupRecaptcha = () => {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible',
+      'callback': () => {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        handlePhoneLogin();
+      }
+    });
+  };
+
+  const verifyCode = async () => {
+    try {
+      const result = await window.confirmationResult.confirm(verificationCode);
+      await login(result.user);
+      navigate('/');
+    } catch (error) {
+      console.error('Error during code verification:', error);
+      // Handle error (show message to user)
+    }
+  };
+
+
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -93,7 +104,6 @@ const Login = () => {
     }
   };
 
-<<<<<<< HEAD
   const handlePhoneLogin = async () => {
     const provider = new PhoneAuthProvider(auth);
     try {
@@ -107,8 +117,6 @@ const Login = () => {
     }
   };
 
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-5 text-center text-primary">{translations[language].title}</h2>
@@ -138,7 +146,6 @@ const Login = () => {
           {translations[language].googleLogin}
         </Button>
       </div>
-<<<<<<< HEAD
       <div className="mt-4">
         <Input
           type="tel"
@@ -147,12 +154,26 @@ const Login = () => {
           placeholder={translations[language].phone}
           className="w-full px-3 py-2 border rounded-md"
         />
-        <Button onClick={handlePhoneLogin} className="w-full mt-2 bg-green-500 text-white hover:bg-green-600">
-          {translations[language].phoneLogin}
-        </Button>
-      </div>
-=======
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
+        {!showVerificationInput ? (
+          <Button onClick={handlePhoneLogin} className="w-full mt-2 bg-green-500 text-white hover:bg-green-600">
+            {translations[language].sendCode}
+          </Button>
+        ) : (
+          <>
+            <Input
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              placeholder={translations[language].verificationCode}
+              className="w-full mt-2 px-3 py-2 border rounded-md"
+            />
+            <Button onClick={verifyCode} className="w-full mt-2 bg-green-500 text-white hover:bg-green-600">
+              {translations[language].verify}
+            </Button>
+          </>
+        )}
+       </div>
+      <div id="recaptcha-container"></div>
       <p className="mt-4 text-center text-quaternary">
         <a href="/register" className="hover:underline">
           {translations[language].register}

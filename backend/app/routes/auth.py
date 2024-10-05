@@ -1,24 +1,17 @@
 from flask import Blueprint, request, jsonify
-<<<<<<< HEAD
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, create_refresh_token,jwt_required, get_jwt_identity
 from app.models.user import User
 from app.services.auth_service import (
-    authenticate_user, register_user, verify_email, enable_two_factor,verify_firebase_token,
+    authenticate_user, register_user, verify_email, enable_two_factor, verify_firebase_token,
     verify_two_factor, reset_password, change_password, logout_all_devices,
-    authenticate_with_google, send_sms_code, verify_sms_code, revoke_token,verify_2fa,initiate_password_reset
+    authenticate_with_google, send_sms_code, verify_sms_code, revoke_token, verify_2fa, initiate_password_reset,
+    verify_phone_number, delete_user_account,deactivate_user_account
 )
 from app import db
 from datetime import timedelta, datetime
 from app.utils.permissions import permission_required, Permission
-=======
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.services.auth_service import (
-    verify_firebase_token, register_user, verify_email, enable_two_factor,
-    verify_two_factor, reset_password, change_password, logout_all_devices,
-    initiate_password_reset
-)
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
 from app.utils.error_handler import handle_error
+from firebase_admin import auth as firebase_auth
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -43,7 +36,16 @@ def login():
         return jsonify(result), 200
     except Exception as e:
         return handle_error(e)
-<<<<<<< HEAD
+
+@auth_bp.route('/verify-email', methods=['POST'])
+def verify_email_route():
+    data = request.get_json()
+    try:
+        if verify_email(data['user_id'], data['token']):
+            return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
+        return jsonify({"error": "Token de verificación inválido"}), 400
+    except Exception as e:
+        return handle_error(e)
 
 @auth_bp.route('/enable-2fa', methods=['POST'])
 @jwt_required()
@@ -57,13 +59,12 @@ def enable_2fa():
     except Exception as e:
         return handle_error(e)
 
-@auth_bp.route('/verify-email', methods=['POST'])
-def verify_email_route():
+@auth_bp.route('/verify-2fa', methods=['POST'])
+def verify_2fa():
     data = request.get_json()
     try:
-        if verify_email(data['user_id'], data['token']):
-            return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
-        return jsonify({"error": "Token de verificación inválido"}), 400
+        result = verify_two_factor(data['user_id'], data['token'])
+        return jsonify(result), 200
     except Exception as e:
         return handle_error(e)
 
@@ -100,22 +101,42 @@ def manage_permissions():
     db.session.commit()
     return jsonify({"message": "Permissions updated successfully"}), 200
 
-@auth_bp.route('/verify-sms-code', methods=['POST'])
-def verify_sms_code_route():
-    phone_number = request.json.get('phone_number')
-    code = request.json.get('code')
-    try:
-        result = verify_sms_code(phone_number, code)
-        return jsonify(result), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 401
 
-@auth_bp.route('/send-sms-code', methods=['POST'])
 def send_sms_code_route():
     phone_number = request.json.get('phone_number')
-    if send_sms_code(phone_number):
-        return jsonify({"message": "SMS code sent successfully"}), 200
-    return jsonify({"error": "Failed to send SMS code"}), 400
+    try:
+        # Firebase handles sending the SMS code automatically
+        # We just need to initiate the phone number verification process
+        verification_id = firebase_auth.create_phone_number_verification(phone_number)
+        return jsonify({"verification_id": verification_id, "message": "SMS code sent successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to send SMS code: {str(e)}"}), 400
+
+@auth_bp.route('/verify-sms-code', methods=['POST'])
+def verify_sms_code_route():
+    verification_id = request.json.get('verification_id')
+    code = request.json.get('code')
+    try:
+        result = firebase_auth.verify_phone_number(verification_id, code)
+        user = create_or_get_user_by_phone(result.phone_number)
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+        return jsonify({
+            "message": "Phone number verified successfully",
+            "user_id": user.id,
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to verify SMS code: {str(e)}"}), 401
+
+def create_or_get_user_by_phone(phone_number):
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user:
+        user = User(phone_number=phone_number)
+        db.session.add(user)
+        db.session.commit()
+        return user
 
 @auth_bp.route('/google-login', methods=['POST'])
 def google_login():
@@ -144,7 +165,17 @@ def initiate_password_reset_route():
             return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-
+    
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password_route():
+    data = request.get_json()
+    try:
+        if reset_password(data['token'], data['new_password']):
+            return jsonify({"message": "Contraseña restablecida exitosamente"}), 200
+        return jsonify({"error": "Token inválido o expirado"}), 400
+    except Exception as e:
+        return handle_error(e)
+    
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password_route():
@@ -154,27 +185,6 @@ def change_password_route():
         if change_password(user_id, data['old_password'], data['new_password']):
             return jsonify({"message": "Contraseña cambiada exitosamente"}), 200
         return jsonify({"error": "No se pudo cambiar la contraseña"}), 400
-    except Exception as e:
-        return handle_error(e)
-    
-@auth_bp.route('/change-password', methods=['POST'])
-@jwt_required()
-def change_password_route():
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    if change_password(user_id, data['old_password'], data['new_password']):
-        return jsonify({"message": "Contraseña cambiada exitosamente"}), 200
-    return jsonify({"error": "No se pudo cambiar la contraseña"}), 400
-
-@auth_bp.route('/initiate-password-reset', methods=['POST'])
-def initiate_password_reset_route():
-    data = request.get_json()
-    try:
-        result = initiate_password_reset(data['email'])
-        if result:
-            return jsonify({"message": "Se ha enviado un correo con instrucciones para restablecer la contraseña"}), 200
-        else:
-            return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
     except Exception as e:
         return handle_error(e)
 
@@ -205,85 +215,47 @@ def update_profile():
     db.session.commit()
     return jsonify({"message": "Profile updated successfully"}), 200
 
+@auth_bp.route('/deactivate-account', methods=['POST'])
+@jwt_required()
+def deactivate_account():
+    user_id = get_jwt_identity()
+    try:
+        if deactivate_user_account(user_id):
+            return jsonify({"message": "Cuenta desactivada exitosamente"}), 200
+        return jsonify({"error": "No se pudo desactivar la cuenta"}), 400
+    except Exception as e:
+        return handle_error(e)
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    user_id = get_jwt_identity()
+    try:
+        delete_user_account(user_id)
+        return jsonify({"message": "Cuenta eliminada exitosamente"}), 200
+    except Exception as e:
+        return handle_error(e)
+
+@auth_bp.route('/verify-phone', methods=['POST'])
+def verify_phone_route():
+    data = request.get_json()
+    try:
+        result = verify_phone_number(data['phone_number'], data['verification_code'])
+        if result:
+            return jsonify({"message": "Número de teléfono verificado exitosamente"}), 200
+        return jsonify({"error": "Código de verificación inválido"}), 400
+    except Exception as e:
+        return handle_error(e)
+
 @auth_bp.route('/upgrade', methods=['POST'])
 @jwt_required()
 def upgrade_membership():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
-=======
-
-@auth_bp.route('/verify-email', methods=['POST'])
-def verify_email_route():
->>>>>>> cf5d1363e5fd14fc01ab6008f88337848b517b9d
     data = request.get_json()
     try:
         if verify_email(data['user_id'], data['token']):
             return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
         return jsonify({"error": "Token de verificación inválido"}), 400
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/enable-2fa', methods=['POST'])
-@jwt_required()
-def enable_2fa():
-    user_id = get_jwt_identity()
-    try:
-        secret = enable_two_factor(user_id)
-        if secret:
-            return jsonify({"secret": secret}), 200
-        return jsonify({"error": "No se pudo habilitar 2FA"}), 400
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/verify-2fa', methods=['POST'])
-def verify_2fa():
-    data = request.get_json()
-    try:
-        result = verify_two_factor(data['user_id'], data['token'])
-        return jsonify(result), 200
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/initiate-password-reset', methods=['POST'])
-def initiate_password_reset_route():
-    data = request.get_json()
-    try:
-        result = initiate_password_reset(data['email'])
-        if result:
-            return jsonify({"message": "Se ha enviado un correo con instrucciones para restablecer la contraseña"}), 200
-        else:
-            return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/reset-password', methods=['POST'])
-def reset_password_route():
-    data = request.get_json()
-    try:
-        if reset_password(data['token'], data['new_password']):
-            return jsonify({"message": "Contraseña restablecida exitosamente"}), 200
-        return jsonify({"error": "Token inválido o expirado"}), 400
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/change-password', methods=['POST'])
-@jwt_required()
-def change_password_route():
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    try:
-        if change_password(user_id, data['old_password'], data['new_password']):
-            return jsonify({"message": "Contraseña cambiada exitosamente"}), 200
-        return jsonify({"error": "No se pudo cambiar la contraseña"}), 400
-    except Exception as e:
-        return handle_error(e)
-
-@auth_bp.route('/logout-all', methods=['POST'])
-@jwt_required()
-def logout_all():
-    user_id = get_jwt_identity()
-    try:
-        logout_all_devices(user_id)
-        return jsonify({"message": "Se ha cerrado sesión en todos los dispositivos"}), 200
     except Exception as e:
         return handle_error(e)
