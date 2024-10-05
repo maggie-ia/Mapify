@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -121,6 +121,9 @@ const UserProfile = () => {
                     {translations[language].update}
                 </Button>
             </form>
+            <DeleteAccount />
         </div>
     );
 };
+
+export default UserProfile;

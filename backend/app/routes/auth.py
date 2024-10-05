@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+<<<<<<< HEAD
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, create_refresh_token,jwt_required, get_jwt_identity
 from app.models.user import User
 from app.services.auth_service import (
@@ -6,9 +7,17 @@ from app.services.auth_service import (
     verify_two_factor, reset_password, change_password, logout_all_devices,
     authenticate_with_google, send_sms_code, verify_sms_code, revoke_token, verify_2fa, initiate_password_reset,
     verify_phone_number, delete_user_account,deactivate_user_account
+=======
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
+from app.models.user import User
+from app.services.auth_service import (
+    register_user, verify_firebase_token, verify_email, enable_two_factor,
+    verify_two_factor, reset_password, change_password, logout_all_devices,
+    authenticate_with_google, verify_sms_code, initiate_password_reset,
+    verify_phone_number, delete_user_account, deactivate_user_account
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 )
 from app import db
-from datetime import timedelta, datetime
 from app.utils.permissions import permission_required, Permission
 from app.utils.error_handler import handle_error
 from firebase_admin import auth as firebase_auth
@@ -31,7 +40,6 @@ def login():
         firebase_token = data.get('firebase_token')
         if not firebase_token:
             return jsonify({"error": "Se requiere token de Firebase"}), 400
-        
         result = verify_firebase_token(firebase_token)
         return jsonify(result), 200
     except Exception as e:
@@ -101,12 +109,19 @@ def manage_permissions():
     db.session.commit()
     return jsonify({"message": "Permissions updated successfully"}), 200
 
+<<<<<<< HEAD
 
 def send_sms_code_route():
     phone_number = request.json.get('phone_number')
     try:
         # Firebase handles sending the SMS code automatically
         # We just need to initiate the phone number verification process
+=======
+@auth_bp.route('/send-sms-code', methods=['POST'])
+def send_sms_code_route():
+    phone_number = request.json.get('phone_number')
+    try:
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
         verification_id = firebase_auth.create_phone_number_verification(phone_number)
         return jsonify({"verification_id": verification_id, "message": "SMS code sent successfully"}), 200
     except Exception as e:
@@ -136,7 +151,11 @@ def create_or_get_user_by_phone(phone_number):
         user = User(phone_number=phone_number)
         db.session.add(user)
         db.session.commit()
+<<<<<<< HEAD
         return user
+=======
+    return user
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 
 @auth_bp.route('/google-login', methods=['POST'])
 def google_login():
@@ -164,8 +183,13 @@ def initiate_password_reset_route():
         else:
             return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
     except Exception as e:
+<<<<<<< HEAD
         return jsonify({"error": str(e)}), 400
     
+=======
+        return handle_error(e)
+
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password_route():
     data = request.get_json()
@@ -175,7 +199,11 @@ def reset_password_route():
         return jsonify({"error": "Token inválido o expirado"}), 400
     except Exception as e:
         return handle_error(e)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password_route():
@@ -234,6 +262,7 @@ def delete_account():
         delete_user_account(user_id)
         return jsonify({"message": "Cuenta eliminada exitosamente"}), 200
     except Exception as e:
+<<<<<<< HEAD
         return handle_error(e)
 
 @auth_bp.route('/verify-phone', methods=['POST'])
@@ -258,4 +287,6 @@ def upgrade_membership():
             return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
         return jsonify({"error": "Token de verificación inválido"}), 400
     except Exception as e:
+=======
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
         return handle_error(e)

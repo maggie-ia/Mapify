@@ -4,9 +4,12 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
+<<<<<<< HEAD
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
+=======
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 import { auth } from '../config/firebaseConfig';
-import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -37,6 +40,7 @@ const Login = () => {
       email: 'Email',
       password: 'Password',
       phone: 'Phone number',
+      verificationCode: 'Verification code',
       login: 'Log in',
       register: "Don't have an account? Sign up",
       googleLogin: 'Login with Google',
@@ -47,6 +51,7 @@ const Login = () => {
       email: 'Adresse e-mail',
       password: 'Mot de passe',
       phone: 'Numéro de téléphone',
+      verificationCode: 'Code de vérification',
       login: 'Se connecter',
       register: "Vous n'avez pas de compte ? Inscrivez-vous",
       googleLogin: 'Se connecter avec Google',
@@ -58,9 +63,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      const response = await axios.post('/api/auth/login', { firebase_token: idToken });
-      await login(response.data);
+      await login(userCredential.user);
       navigate('/');
     } catch (error) {
       console.error('Error during login:', error);
@@ -94,9 +97,7 @@ const Login = () => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-      const response = await axios.post('/api/auth/login', { firebase_token: idToken });
-      await login(response.data);
+      await login(result.user);
       navigate('/');
     } catch (error) {
       console.error('Error during Google login:', error);
@@ -104,19 +105,48 @@ const Login = () => {
     }
   };
 
+<<<<<<< HEAD
+=======
+  const setupRecaptcha = () => {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible',
+      'callback': () => {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        handlePhoneLogin();
+      }
+    });
+  };
+
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
   const handlePhoneLogin = async () => {
-    const provider = new PhoneAuthProvider(auth);
+    if (!window.recaptchaVerifier) {
+      setupRecaptcha();
+    }
+    const appVerifier = window.recaptchaVerifier;
     try {
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber);
-      // Here you would typically open a modal or navigate to a new page to enter the verification code
-      // For simplicity, we're just logging the confirmation result
-      console.log('SMS sent. Confirmation result:', confirmationResult);
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      window.confirmationResult = confirmationResult;
+      setShowVerificationInput(true);
     } catch (error) {
       console.error('Error during phone login:', error);
       // Handle error (show message to user)
     }
   };
 
+<<<<<<< HEAD
+=======
+  const verifyCode = async () => {
+    try {
+      const result = await window.confirmationResult.confirm(verificationCode);
+      await login(result.user);
+      navigate('/');
+    } catch (error) {
+      console.error('Error during code verification:', error);
+      // Handle error (show message to user)
+    }
+  };
+
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-quinary rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-5 text-center text-primary">{translations[language].title}</h2>
@@ -172,7 +202,11 @@ const Login = () => {
             </Button>
           </>
         )}
+<<<<<<< HEAD
        </div>
+=======
+      </div>
+>>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
       <div id="recaptcha-container"></div>
       <p className="mt-4 text-center text-quaternary">
         <a href="/register" className="hover:underline">
