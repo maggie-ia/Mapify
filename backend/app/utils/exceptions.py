@@ -26,14 +26,6 @@ class RelevantPhrasesError(TextProcessingError):
     """Excepción para errores durante la extracción de frases relevantes."""
     pass
 
-class AuthenticationError(Exception):
-    """Excepción para errores de autenticación."""
-    pass
-
-class MembershipError(Exception):
-    """Excepción para errores relacionados con la membresía."""
-    pass
-
-class ExportError(Exception):
-    """Excepción para errores durante la exportación de resultados."""
+class ProblemSolvingError(TextProcessingError):
+    """Excepción para errores durante la resolución de problemas."""
     pass
