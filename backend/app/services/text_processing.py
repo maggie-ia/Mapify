@@ -81,5 +81,3 @@ def process_text(operation, text, target_language=None):
         raise TextProcessingError("Ocurrió un error al procesar su solicitud")
     finally:
         db.session.commit()
-
-# ... keep existing code
