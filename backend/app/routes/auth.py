@@ -5,10 +5,11 @@ from app.services.auth_service import (
     authenticate_user, register_user, verify_email, enable_two_factor, verify_firebase_token,
     verify_two_factor, reset_password, change_password, logout_all_devices,
     authenticate_with_google, send_sms_code, verify_sms_code, revoke_token, verify_2fa, initiate_password_reset,
-    verify_phone_number, delete_user_account
+    verify_phone_number, delete_user_account, deactivate_user_account
 )
 from app import db
 from app.utils.error_handler import handle_error
+from firebase_admin import auth as firebase_auth
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -150,4 +151,33 @@ def google_login():
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 401
+
+@auth_bp.route('/send-sms-code', methods=['POST'])
+def send_sms_code_route():
+    phone_number = request.json.get('phone_number')
+    try:
+        # Firebase handles sending the SMS code automatically
+        # We just need to initiate the phone number verification process
+        verification_id = firebase_auth.create_phone_number_verification(phone_number)
+        return jsonify({"verification_id": verification_id, "message": "SMS code sent successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to send SMS code: {str(e)}"}), 400
+
+@auth_bp.route('/verify-sms-code', methods=['POST'])
+def verify_sms_code_route():
+    verification_id = request.json.get('verification_id')
+    code = request.json.get('code')
+    try:
+        # Verify the SMS code using Firebase
+        result = firebase_auth.verify_phone_number(verification_id, code)
+        # If verification is successful, you can create a user or log them in here
+        # For example:
+        # user = create_or_get_user_by_phone(result.phone_number)
+        # access_token = create_access_token(identity=user.id)
+        # refresh_token = create_refresh_token(identity=user.id)
+        return jsonify({"message": "Phone number verified successfully", "user_id": result.uid}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to verify SMS code: {str(e)}"}), 401
+
+
 
