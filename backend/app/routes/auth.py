@@ -261,13 +261,13 @@ def upgrade_membership_route():
 
 @auth_bp.route('/upgrade', methods=['POST'])
 @jwt_required()
-def upgrade_membership():
+def upgrade_membership_route():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
     data = request.get_json()
     try:
-        if verify_email(data['user_id'], data['token']):
-            return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
-        return jsonify({"error": "Token de verificación inválido"}), 400
+        result = update_membership(current_user_id, data['new_membership_type'], data['new_duration'])
+        if result:
+            return jsonify({"message": "Membresía actualizada exitosamente", "new_membership": result}), 200
+        return jsonify({"error": "No se pudo actualizar la membresía"}), 400
     except Exception as e:
         return handle_error(e)

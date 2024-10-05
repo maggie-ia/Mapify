@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# Cargar las variables de entorno desde .env
 load_dotenv()
 
 class Config:
+<<<<<<< HEAD
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SENTRY_DSN = os.environ.get('SENTRY_DSN')
@@ -37,8 +37,18 @@ class Config:
 
     
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+=======
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'app.db')
+>>>>>>> 698f7c8138a0ab4361d570dc1d512a8f270afb59
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'super-secret'
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379'
+    
+    # Otras configuraciones...
 
+<<<<<<< HEAD
     # Configuración de Firebase
     FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
     FIREBASE_CLIENT_EMAIL = os.getenv("FIREBASE_CLIENT_EMAIL")
@@ -91,3 +101,8 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }  
+=======
+    @staticmethod
+    def init_app(app):
+        pass
+>>>>>>> 698f7c8138a0ab4361d570dc1d512a8f270afb59

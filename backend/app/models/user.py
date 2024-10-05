@@ -7,7 +7,7 @@ import secrets
 
 logger = logging.getLogger(__name__)
 
-class User(db.Model):
+class User(db.Model, UserMembership, UserPermissions):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
@@ -23,29 +23,11 @@ class User(db.Model):
     reset_token = db.Column(db.String(64))
     reset_token_expiration = db.Column(db.DateTime)
     active_sessions = db.Column(db.JSON, default=[])
-    permissions = db.Column(db.JSON, default=[])
     phone_number = db.Column(db.String(20))
     phone_verified = db.Column(db.Boolean, default=False)
     phone_verification_code = db.Column(db.String(6))
     phone_verification_expiration = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
-
-    def get_max_file_size(self):
-        if self.membership_type == 'premium':
-            return 50 * 1024 * 1024  # 50 MB
-        elif self.membership_type == 'basic':
-            return 20 * 1024 * 1024  # 20 MB
-        else:
-            return 5 * 1024 * 1024  # 5 MB
-        
-    def deactivate_account(self):
-        self.is_active = False
-        db.session.commit()
-    
-    def generate_reset_token(self):
-        self.reset_token = secrets.token_urlsafe(32)
-        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
-        return self.reset_token
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -111,13 +93,15 @@ class User(db.Model):
         return totp.verify(token)
     
     def generate_reset_token(self):
-        self.reset_password_token = pyotp.random_base32()
-        self.reset_password_expire = datetime.utcnow() + timedelta(hours=1)
-    
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
+        db.session.commit()
+        return self.reset_token
+
     def verify_reset_token(self, token):
-        if self.reset_password_expire < datetime.utcnow():
+        if self.reset_token_expiration < datetime.utcnow():
             return False
-        return self.reset_password_token == token
+        return self.reset_token == token
     
     def to_dict(self):
         return {
@@ -125,7 +109,7 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'membership_type': self.membership_type,
-            'is_two_factor_enabled': self.is_two_factor_enabled
+            'is_two_factor_enabled': self.two_factor_enabled
         }
 
     def generate_email_verification_token(self):
@@ -199,3 +183,4 @@ class RevokedToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
