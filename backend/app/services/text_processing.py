@@ -8,7 +8,7 @@ from app.utils.exceptions import (
     TextProcessingError, SummarizationError, ParaphraseError, SynthesisError,
     RelevantPhrasesError, TranslationError, ConceptMapError, ProblemSolvingError
 )
-from app.utils.error_handler import AppError
+from app.utils.error_handler import AppError, log_error
 from app.services.text_operations import (
     translate_text, summarize_text, paraphrase_text, synthesize_text,
     generate_concept_map, generate_relevant_phrases, solve_problem, check_grammar
@@ -31,7 +31,7 @@ def process_text(operation, text, target_language=None):
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     if not user:
-        logger.error(f"Usuario no encontrado: {user_id}")
+        log_error(f"Usuario no encontrado: {user_id}")
         raise TextProcessingError("Usuario no encontrado")
 
     validate_text_input(text)
@@ -49,22 +49,20 @@ def process_text(operation, text, target_language=None):
 
     try:
         if operation not in operations:
-            logger.warning(f"Operación no soportada: {operation}")
+            log_error(f"Operación no soportada: {operation}", extra={"user_id": user_id})
             raise TextProcessingError("Operación no soportada")
 
         result = operations[operation]()
         if result is None and operation == 'translate':
             error_message = f"El usuario {user_id} intentó una traducción no autorizada al idioma {target_language}"
-            logger.warning(error_message)
-            user.log_error(error_message)
+            log_error(error_message, extra={"user_id": user_id, "target_language": target_language})
             raise TranslationError("Idioma de traducción no autorizado")
 
         logger.info(f"Operación {operation} completada con éxito para el usuario {user_id}")
         return result
     except Exception as e:
         error_message = f"Error al procesar {operation} para el usuario {user_id}: {str(e)}"
-        logger.error(error_message)
-        user.log_error(error_message)
+        log_error(error_message, extra={"user_id": user_id, "operation": operation})
         raise TextProcessingError("Ocurrió un error al procesar su solicitud")
 
 def get_writing_assistance(text, membership_type):

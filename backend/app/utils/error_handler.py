@@ -1,5 +1,5 @@
-import logging
 from flask import jsonify
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,20 +15,27 @@ class AppError(Exception):
         rv['message'] = self.message
         return rv
 
-def handle_error(error):
+def handle_app_error(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
-    logger.error(f"Error: {error.message}", exc_info=True)
+    logger.error(f"AppError: {error.message}", exc_info=True)
     return response
 
 def setup_error_handlers(app):
-    app.register_error_handler(AppError, handle_error)
+    app.register_error_handler(AppError, handle_app_error)
     
     @app.errorhandler(404)
     def not_found_error(error):
+        logger.error("404 error occurred", exc_info=True)
         return jsonify({"error": "Not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
-        logger.error("An internal error occurred", exc_info=True)
+        logger.error("500 error occurred", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+
+def log_error(message, extra=None):
+    if extra:
+        logger.error(f"{message} - Extra info: {extra}", exc_info=True)
+    else:
+        logger.error(message, exc_info=True)
