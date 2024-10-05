@@ -1,212 +1,22 @@
-<<<<<<< HEAD
-=======
-import os
-from flask import current_app
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-from app.models.user import User, UserActivity
-from app.utils.exceptions import AuthenticationError
-from flask_jwt_extended import create_access_token, create_refresh_token
-from werkzeug.security import check_password_hash
-import logging
-from datetime import datetime, timedelta
-<<<<<<< HEAD
+from .auth_utils import (
+    is_password_secure, send_verification_email, send_password_reset_email,
+    generate_reset_token, verify_phone_number
+)
+from .firebase_auth import verify_firebase_token
+from .user_management import (
+    register_user, verify_email, enable_two_factor, verify_two_factor,
+    reset_password, change_password, logout_all_devices, log_user_activity
+)
+from .google_auth import authenticate_with_google
+from .sms_auth import verify_sms_code
+from app.models.user import User
 from app import db
-import pyotp
-import re
-import secrets
-import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jti
-from google.oauth2 import id_token
-from google.auth.transport import requests
-import phonenumbers
-from app.models.revoked_token import RevokedToken
-from app.extensions import db, cache
-from flask_caching import Cache
-=======
-import pyotp
-import re
-import secrets
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-import firebase_admin
-from firebase_admin import auth as firebase_auth
-from firebase_admin import credentials
+import logging
 
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase Admin SDK
-cred = credentials.Certificate({
-    "type": "service_account",
-    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
-    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
-    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
-    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL")
-})
-firebase_admin.initialize_app(cred)
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-def verify_firebase_token(token):
-    try:
-        decoded_token = firebase_auth.verify_id_token(token)
-        uid = decoded_token['uid']
-        user = User.query.filter_by(firebase_uid=uid).first()
-        if not user:
-<<<<<<< HEAD
-            # Si el usuario no existe en nuestra base de datos, lo creamos
-=======
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-            email = decoded_token.get('email')
-            username = decoded_token.get('name', email.split('@')[0])
-            user = register_user(username, email, None, uid)
-        
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
-        log_user_activity(user.id, 'login')
-        return {'access_token': access_token, 'refresh_token': refresh_token}
-    except Exception as e:
-        logger.error(f"Error de autenticación con Firebase: {str(e)}")
-        raise AuthenticationError("Error durante la autenticación con Firebase")
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-def register_user(username, email, password=None, firebase_uid=None):
-    try:
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            raise AuthenticationError("El correo electrónico ya está registrado")
-        
-        if password and not is_password_secure(password):
-            raise AuthenticationError("La contraseña no cumple con los requisitos de seguridad")
-
-        new_user = User(username=username, email=email, firebase_uid=firebase_uid)
-        if password:
-            new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        if not firebase_uid:
-            verification_token = new_user.generate_email_verification_token()
-            send_verification_email(new_user.email, verification_token)
-
-        log_user_activity(new_user.id, 'register')
-        return new_user
-    except Exception as e:
-        logger.error(f"Error de registro: {str(e)}")
-        db.session.rollback()
-        raise AuthenticationError("Error durante el registro")
-
-def verify_email(user_id, token):
-    user = User.query.get(user_id)
-    if user and user.verify_email(token):
-        user.email_verified = True
-        db.session.commit()
-        log_user_activity(user.id, 'email_verified')
-        return True
-    return False
-
-<<<<<<< HEAD
-=======
-def enable_two_factor(user_id):
-    user = User.query.get(user_id)
-    if user:
-        secret = pyotp.random_base32()
-        user.two_factor_secret = secret
-        user.two_factor_enabled = True
-        db.session.commit()
-        log_user_activity(user.id, 'enable_2fa')
-        return secret
-    return None
-
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-def verify_two_factor(user_id, token):
-    user = User.query.get(user_id)
-    if user and user.verify_two_factor(token):
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
-        log_user_activity(user.id, '2fa_verified')
-        return {'access_token': access_token, 'refresh_token': refresh_token}
-    raise AuthenticationError("Código 2FA inválido")
-
-def reset_password(token, new_password):
-    user = User.query.filter_by(password_reset_token=token).first()
-    if user and user.password_reset_expiration > datetime.utcnow():
-        if is_password_secure(new_password):
-            user.set_password(new_password)
-            user.password_reset_token = None
-            user.password_reset_expiration = None
-            db.session.commit()
-            log_user_activity(user.id, 'password_reset_completed')
-            return True
-    return False
-
-def change_password(user_id, old_password, new_password):
-    user = User.query.get(user_id)
-    if user and user.check_password(old_password):
-        if is_password_secure(new_password):
-            user.set_password(new_password)
-            db.session.commit()
-            log_user_activity(user.id, 'password_changed')
-            return True
-    return False
-
-<<<<<<< HEAD
-=======
-def logout_all_devices(user_id):
-    user = User.query.get(user_id)
-    if user:
-        user.refresh_token_jti = secrets.token_hex(32)
-        db.session.commit()
-        log_user_activity(user_id, 'logout_all_devices')
-        return True
-    return False
-
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
-def log_user_activity(user_id, activity_type, details=None):
-    new_activity = UserActivity(user_id=user_id, activity_type=activity_type, details=details)
-    db.session.add(new_activity)
-    db.session.commit()
-
-def is_password_secure(password):
-    if len(password) < 8:
-        return False
-    if not re.search(r"[A-Z]", password):
-        return False
-    if not re.search(r"[a-z]", password):
-        return False
-    if not re.search(r"\d", password):
-        return False
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-        return False
-    return True
-
-def send_verification_email(email, token):
-    subject = "Verifica tu correo electrónico"
-    body = f"Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace: {current_app.config['FRONTEND_URL']}/verify-email?token={token}"
-    send_email(email, subject, body)
-
-def send_password_reset_email(email, token):
-    subject = "Restablecimiento de contraseña"
-    body = f"Para restablecer tu contraseña, haz clic en el siguiente enlace: {current_app.config['FRONTEND_URL']}/reset-password?token={token}"
-    send_email(email, subject, body)
-
 def initiate_password_reset(email):
     user = User.query.filter_by(email=email).first()
-<<<<<<< HEAD
     if user:
         reset_token = generate_reset_token()
         user.password_reset_token = reset_token
@@ -217,161 +27,14 @@ def initiate_password_reset(email):
         return True
     return False
 
-def send_email(to_email, subject, body):
-    smtp_server = current_app.config['SMTP_SERVER']
-    smtp_port = current_app.config['SMTP_PORT']
-    smtp_username = current_app.config['SMTP_USERNAME']
-    smtp_password = current_app.config['SMTP_PASSWORD']
-    from_email = current_app.config['FROM_EMAIL']
-
-    msg = MIMEMultipart()
-    msg['From'] = from_email
-    msg['To'] = to_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.send_message(msg)
-        logger.info(f"Correo enviado exitosamente a {to_email}")
-    except Exception as e:
-        logger.error(f"Error al enviar correo a {to_email}: {str(e)}")
-        raise
-
-def generate_reset_token():
-    return secrets.token_urlsafe(32)
-
-def verify_phone_number(phone_number, verification_code):
-    try:
-        # Verificar el código de verificación con Firebase
-        decoded_token = firebase_auth.verify_phone_number(phone_number, verification_code)
-        uid = decoded_token['uid']
-        
-        # Buscar o crear el usuario en nuestra base de datos
-        user = User.query.filter_by(firebase_uid=uid).first()
-        if not user:
-            user = register_user(username=phone_number, email=None, password=None, firebase_uid=uid)
-        
-        # Marcar el número de teléfono como verificado
-        user.phone_verified = True
-        user.phone_number = phone_number
-        db.session.commit()
-        
-        log_user_activity(user.id, 'phone_verified')
-        return True
-    except Exception as e:
-        logger.error(f"Error al verificar el número de teléfono: {str(e)}")
-        return False
-
-def logout_all_devices(user_id):
-    user = User.query.get(user_id)
-    if user:
-        user.refresh_token_jti = secrets.token_hex(32)
-        db.session.commit()
-        log_user_activity(user_id, 'logout_all_devices')
-        return True
-    return False
-
-def enable_two_factor(user_id):
-    user = User.query.get(user_id)
-    if user:
-        secret = pyotp.random_base32()
-        user.two_factor_secret = secret
-        user.two_factor_enabled = True
-        db.session.commit()
-        log_user_activity(user.id, 'enable_2fa')
-        return secret
-    return None
-
-def authenticate_user(email, password):
-    try:
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            if user.two_factor_enabled:
-                return {'requires_2fa': True, 'user_id': user.id}
-            access_token = create_access_token(identity=user.id)
-            refresh_token = create_refresh_token(identity=user.id)
-            log_user_activity(user.id, 'login')
-            return {'access_token': access_token, 'refresh_token': refresh_token}
-        else:
-            raise AuthenticationError("Credenciales inválidas")
-    except Exception as e:
-        logger.error(f"Error de autenticación: {str(e)}")
-        raise AuthenticationError("Error durante la autenticación")
-
-def revoke_token(jti):
-    try:
-        revoked_token = RevokedToken(jti=jti)
-        db.session.add(revoked_token)
-        db.session.commit()
-        logger.info(f"Token revoked: {jti}")
-    except Exception as e:
-        logger.error(f"Error revoking token: {str(e)}")
-        db.session.rollback()
-        raise AuthenticationError("Error al revocar el token")
-
-def is_token_revoked(jti):
-    return RevokedToken.query.filter_by(jti=jti).first() is not None
-
-def enable_2fa(user_id):
-    user = User.query.get(user_id)
-    if user:
-        user.generate_2fa_secret()
-        db.session.commit()
-        return user.two_factor_secret
-    return None
-
-def authenticate_with_google(token):
-    try:
-        idinfo = id_token.verify_oauth2_token(token, requests.Request(), current_app.config['GOOGLE_CLIENT_ID'])
-        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
-            raise ValueError('Wrong issuer.')
-        
-        user_email = idinfo['email']
-        user = User.query.filter_by(email=user_email).first()
-        
-        if not user:
-            # Create a new user if they don't exist
-            user = register_user(idinfo['name'], user_email, secrets.token_urlsafe(32))
-        
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
-        log_user_activity(user.id, 'login_google')
-        return {'access_token': access_token, 'refresh_token': refresh_token}
-    except ValueError:
-        raise AuthenticationError("Invalid Google token")
-
-def verify_sms_code(phone_number, code):
-    """
-    Verify the SMS code entered by the user.
-    """
-    stored_code = cache.get(f"sms_code_{phone_number}")
-    if stored_code and stored_code == code:
-        # Clear the code from cache after successful verification
-        cache.delete(f"sms_code_{phone_number}")
-        return True
-    return False
-
-def verify_2fa(user_id, token):
-    user = User.query.get(user_id)
-    if user and user.verify_2fa(token):
-        return True
-    return False
-
-
 def deactivate_user_account(user_id):
     user = User.query.get(user_id)
-=======
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
     if user:
         user.deactivate_account()
         log_user_activity(user.id, 'account_deactivated')
         return True
     return False
 
-<<<<<<< HEAD
 def delete_user_account(user_id):
     user = User.query.get(user_id)
     if user:
@@ -380,7 +43,7 @@ def delete_user_account(user_id):
         log_user_activity(user_id, 'account_deleted')
     else:
         raise AuthenticationError("Usuario no encontrado")
-=======
+
 def send_email(to_email, subject, body):
     smtp_server = current_app.config['SMTP_SERVER']
     smtp_port = current_app.config['SMTP_PORT']
@@ -428,14 +91,3 @@ def verify_phone_number(phone_number, verification_code):
     except Exception as e:
         logger.error(f"Error al verificar el número de teléfono: {str(e)}")
         return False
-
-def deactivate_user_account(user_id):
-    user = User.query.get(user_id)
-    if user:
-        user.deactivate_account()
-        log_user_activity(user.id, 'account_deactivated')
-        return True
-    return False
-
-# ... keep existing code for other functions
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
