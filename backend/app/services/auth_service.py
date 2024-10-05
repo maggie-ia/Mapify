@@ -16,17 +16,6 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 
-
-def deactivate_user_account(user_id):
-    user = User.query.get(user_id)
-    if user:
-        user.deactivate_account()
-        log_user_activity(user.id, 'account_deactivated')
-        return True
-    return False
-
-
-
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
@@ -50,7 +39,6 @@ def verify_firebase_token(token):
         uid = decoded_token['uid']
         user = User.query.filter_by(firebase_uid=uid).first()
         if not user:
-            # Si el usuario no existe en nuestra base de datos, lo creamos
             email = decoded_token.get('email')
             username = decoded_token.get('name', email.split('@')[0])
             user = register_user(username, email, None, uid)
@@ -237,3 +225,12 @@ def verify_phone_number(phone_number, verification_code):
         logger.error(f"Error al verificar el número de teléfono: {str(e)}")
         return False
 
+def deactivate_user_account(user_id):
+    user = User.query.get(user_id)
+    if user:
+        user.deactivate_account()
+        log_user_activity(user.id, 'account_deactivated')
+        return True
+    return False
+
+# ... keep existing code for other functions
