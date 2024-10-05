@@ -13,7 +13,10 @@ from app.services.text_operations import (
     translate_text, summarize_text, paraphrase_text, synthesize_text,
     generate_concept_map, generate_relevant_phrases, solve_problem, check_grammar
 )
-from app.extensions import cache
+from app.extensions import cache, db
+from sqlalchemy.orm import with_lockmode
+from rq import Queue
+from redis import Redis
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,10 @@ nlp = spacy.load("es_core_news_sm")
 summarizer = pipeline("summarization")
 paraphraser = pipeline("text2text-generation", model="tuner007/pegasus_paraphrase")
 tool = language_tool_python.LanguageTool('es')
+
+# Configuración de la cola de tareas
+redis_conn = Redis()
+q = Queue('text_processing', connection=redis_conn)
 
 def validate_text_input(text, max_length=10000):
     if not text:
@@ -38,7 +45,7 @@ def cached_paraphrase_text(text):
 
 def process_text(operation, text, target_language=None):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = User.query.with_lockmode('update').get(user_id)
     if not user:
         log_error(f"Usuario no encontrado: {user_id}")
         raise TextProcessingError("Usuario no encontrado")
@@ -61,7 +68,10 @@ def process_text(operation, text, target_language=None):
             log_error(f"Operación no soportada: {operation}", extra={"user_id": user_id})
             raise TextProcessingError("Operación no soportada")
 
-        result = operations[operation]()
+        # Encolar la tarea para procesamiento asíncrono
+        job = q.enqueue(operations[operation])
+        result = job.result
+
         if result is None and operation == 'translate':
             error_message = f"El usuario {user_id} intentó una traducción no autorizada al idioma {target_language}"
             log_error(error_message, extra={"user_id": user_id, "target_language": target_language})
@@ -73,6 +83,8 @@ def process_text(operation, text, target_language=None):
         error_message = f"Error al procesar {operation} para el usuario {user_id}: {str(e)}"
         log_error(error_message, extra={"user_id": user_id, "operation": operation})
         raise TextProcessingError("Ocurrió un error al procesar su solicitud")
+    finally:
+        db.session.commit()
 
 def get_writing_assistance(text, membership_type):
     matches = tool.check(text)
