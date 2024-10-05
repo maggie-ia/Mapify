@@ -5,7 +5,7 @@ from app.services.auth_service import (
     authenticate_user, register_user, verify_email, enable_two_factor, verify_firebase_token,
     verify_two_factor, reset_password, change_password, logout_all_devices,
     authenticate_with_google, send_sms_code, verify_sms_code, revoke_token, verify_2fa, initiate_password_reset,
-    verify_phone_number
+    verify_phone_number, delete_user_account
 )
 from app import db
 from app.utils.error_handler import handle_error
@@ -86,6 +86,17 @@ def verify_phone_route():
         if result:
             return jsonify({"message": "Número de teléfono verificado exitosamente"}), 200
         return jsonify({"error": "Código de verificación inválido"}), 400
+    except Exception as e:
+        return handle_error(e)
+
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    user_id = get_jwt_identity()
+    try:
+        delete_user_account(user_id)
+        return jsonify({"message": "Cuenta eliminada exitosamente"}), 200
     except Exception as e:
         return handle_error(e)
 

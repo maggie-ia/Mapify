@@ -16,6 +16,16 @@ import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 
+def delete_user_account(user_id):
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        log_user_activity(user_id, 'account_deleted')
+    else:
+        raise AuthenticationError("Usuario no encontrado")
+
+
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
@@ -225,3 +235,4 @@ def verify_phone_number(phone_number, verification_code):
     except Exception as e:
         logger.error(f"Error al verificar el número de teléfono: {str(e)}")
         return False
+

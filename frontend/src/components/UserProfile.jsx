@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
-
 import { useAuth } from '../hooks/useAuth';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from 'react-hot-toast';
+import DeleteAccount from './DeleteAccount';
 
 const UserProfile = () => {
     const { user, updateProfile } = useAuth();
@@ -121,6 +121,9 @@ const UserProfile = () => {
                     {translations[language].update}
                 </Button>
             </form>
+            <DeleteAccount />
         </div>
     );
 };
+
+export default UserProfile;
