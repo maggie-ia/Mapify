@@ -8,8 +8,6 @@ from .utils.error_handler import setup_error_handlers
 import logging
 from .config.logging_config import setup_logging
 from .extensions import db, migrate, jwt, cache
-from redis import Redis
-from rq import Queue
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -26,10 +24,6 @@ def create_app(config_class=Config):
     }
     app.config.from_mapping(cache_config)
     cache.init_app(app)
-
-    # Configuración de Redis y RQ
-    app.redis = Redis.from_url(app.config['REDIS_URL'])
-    app.task_queue = Queue('mapify-tasks', connection=app.redis)
 
     setup_logger(app)
     setup_error_handlers(app)
