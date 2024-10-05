@@ -1,21 +1,12 @@
 from flask import Blueprint, request, jsonify
-<<<<<<< HEAD
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, create_refresh_token,jwt_required, get_jwt_identity
-from app.models.user import User
-from app.services.auth_service import (
-    authenticate_user, register_user, verify_email, enable_two_factor, verify_firebase_token,
-    verify_two_factor, reset_password, change_password, logout_all_devices,
-    authenticate_with_google, send_sms_code, verify_sms_code, revoke_token, verify_2fa, initiate_password_reset,
-    verify_phone_number, delete_user_account,deactivate_user_account
-=======
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from app.models.user import User
 from app.services.auth_service import (
     register_user, verify_firebase_token, verify_email, enable_two_factor,
     verify_two_factor, reset_password, change_password, logout_all_devices,
     authenticate_with_google, verify_sms_code, initiate_password_reset,
-    verify_phone_number, delete_user_account, deactivate_user_account
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
+    verify_phone_number, delete_user_account, deactivate_user_account,
+    update_membership
 )
 from app import db
 from app.utils.permissions import permission_required, Permission
@@ -109,19 +100,10 @@ def manage_permissions():
     db.session.commit()
     return jsonify({"message": "Permissions updated successfully"}), 200
 
-<<<<<<< HEAD
-
-def send_sms_code_route():
-    phone_number = request.json.get('phone_number')
-    try:
-        # Firebase handles sending the SMS code automatically
-        # We just need to initiate the phone number verification process
-=======
 @auth_bp.route('/send-sms-code', methods=['POST'])
 def send_sms_code_route():
     phone_number = request.json.get('phone_number')
     try:
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
         verification_id = firebase_auth.create_phone_number_verification(phone_number)
         return jsonify({"verification_id": verification_id, "message": "SMS code sent successfully"}), 200
     except Exception as e:
@@ -151,11 +133,7 @@ def create_or_get_user_by_phone(phone_number):
         user = User(phone_number=phone_number)
         db.session.add(user)
         db.session.commit()
-<<<<<<< HEAD
-        return user
-=======
     return user
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 
 @auth_bp.route('/google-login', methods=['POST'])
 def google_login():
@@ -183,13 +161,8 @@ def initiate_password_reset_route():
         else:
             return jsonify({"error": "No se encontró un usuario con ese correo electrónico"}), 404
     except Exception as e:
-<<<<<<< HEAD
-        return jsonify({"error": str(e)}), 400
-    
-=======
         return handle_error(e)
 
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password_route():
     data = request.get_json()
@@ -199,11 +172,7 @@ def reset_password_route():
         return jsonify({"error": "Token inválido o expirado"}), 400
     except Exception as e:
         return handle_error(e)
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
 def change_password_route():
@@ -262,7 +231,6 @@ def delete_account():
         delete_user_account(user_id)
         return jsonify({"message": "Cuenta eliminada exitosamente"}), 200
     except Exception as e:
-<<<<<<< HEAD
         return handle_error(e)
 
 @auth_bp.route('/verify-phone', methods=['POST'])
@@ -276,17 +244,15 @@ def verify_phone_route():
     except Exception as e:
         return handle_error(e)
 
-@auth_bp.route('/upgrade', methods=['POST'])
+@auth_bp.route('/upgrade-membership', methods=['POST'])
 @jwt_required()
-def upgrade_membership():
+def upgrade_membership_route():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
     data = request.get_json()
     try:
-        if verify_email(data['user_id'], data['token']):
-            return jsonify({"message": "Correo electrónico verificado exitosamente"}), 200
-        return jsonify({"error": "Token de verificación inválido"}), 400
+        result = update_membership(current_user_id, data['new_membership_type'], data['new_duration'])
+        if result:
+            return jsonify({"message": "Membresía actualizada exitosamente", "new_membership": result}), 200
+        return jsonify({"error": "No se pudo actualizar la membresía"}), 400
     except Exception as e:
-=======
->>>>>>> 1be06dedf9846383b64beebf5a3cc06330d64d28
         return handle_error(e)
