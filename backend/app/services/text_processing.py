@@ -82,6 +82,3 @@ def get_writing_assistance(text, membership_type):
             suggestions.append(suggestion)
     
     return suggestions[:10]  # Limitar a 10 sugerencias para evitar sobrecarga
-
-# Las funciones extract_text_from_file y explain_problem se han eliminado ya que no se utilizan en este archivo
-# Si son necesarias, deberían moverse a un archivo separado de utilidades
