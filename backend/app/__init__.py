@@ -8,12 +8,6 @@ from .utils.error_handler import setup_error_handlers
 import logging
 from .config.logging_config import setup_logging
 from .extensions import db, migrate, jwt, cache
-from flask_caching import Cache
-
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
-cache = Cache()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -22,6 +16,13 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
+    # Configuración de caché
+    cache_config = {
+        'CACHE_TYPE': 'simple',
+        'CACHE_DEFAULT_TIMEOUT': 300
+    }
+    app.config.from_mapping(cache_config)
     cache.init_app(app)
 
     setup_logger(app)

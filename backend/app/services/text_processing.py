@@ -13,6 +13,7 @@ from app.services.text_operations import (
     translate_text, summarize_text, paraphrase_text, synthesize_text,
     generate_concept_map, generate_relevant_phrases, solve_problem, check_grammar
 )
+from app.extensions import cache
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,14 @@ def validate_text_input(text, max_length=10000):
     if len(text) > max_length:
         raise AppError(f"El texto excede la longitud máxima permitida de {max_length} caracteres")
 
+@cache.memoize(timeout=3600)  # Cache for 1 hour
+def cached_summarize_text(text):
+    return summarize_text(text)
+
+@cache.memoize(timeout=3600)  # Cache for 1 hour
+def cached_paraphrase_text(text):
+    return paraphrase_text(text)
+
 def process_text(operation, text, target_language=None):
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
@@ -38,8 +47,8 @@ def process_text(operation, text, target_language=None):
 
     operations = {
         'translate': lambda: translate_text(text, target_language) if user.can_translate_to_language(target_language) else None,
-        'summarize': lambda: summarize_text(text),
-        'paraphrase': lambda: paraphrase_text(text),
+        'summarize': lambda: cached_summarize_text(text),
+        'paraphrase': lambda: cached_paraphrase_text(text),
         'synthesize': lambda: synthesize_text(text),
         'conceptMap': lambda: generate_concept_map(text),
         'relevantPhrases': lambda: generate_relevant_phrases(text),
