@@ -7,5 +7,7 @@ from .conversation_category import ConversationCategory
 from .membership import Membership
 from .revoked_token import RevokedToken
 from .user_activity import UserActivity
+from .user_membership import UserMembership
+from .user_permissions import UserPermissions
 
-# Asegúrate de que todos los modelos que necesitas estén importados aquí
+# Ensure all models are imported here

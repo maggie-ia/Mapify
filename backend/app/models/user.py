@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import pyotp
 import logging
 import secrets
+from .user_membership import UserMembership
+from .user_permissions import UserPermissions
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +159,7 @@ class User(db.Model, UserMembership, UserPermissions):
         db.session.commit()
         return self.reset_token
 
+
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -183,4 +186,3 @@ class RevokedToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     jti = db.Column(db.String(36), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-

@@ -18,7 +18,14 @@ class RequestFormatter(logging.Formatter):
         else:
             record.url = None
             record.remote_addr = None
-        return super().format(record)
+
+        # Use a safer string formatting method
+        log_message = self._fmt % record.__dict__
+        if record.url:
+            log_message += f" - URL: {record.url}"
+        if record.remote_addr:
+            log_message += f" - IP: {record.remote_addr}"
+        return log_message
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter if jsonlogger else logging.Formatter):
     def add_fields(self, log_record, record, message_dict):
@@ -37,8 +44,6 @@ def setup_logging(app):
     file_handler = RotatingFileHandler('logs/mapify.log', maxBytes=10240, backupCount=10)
     formatter = RequestFormatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        '%(if url)s - URL: %(url)s%(endif)s'
-        '%(if remote_addr)s - IP: %(remote_addr)s%(endif)s'
     )
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
