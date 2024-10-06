@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-from .config import Config
+from config import Config  # Updated import statement
 from .utils.logger import setup_logger
 from .utils.error_handler import setup_error_handlers
 import logging
