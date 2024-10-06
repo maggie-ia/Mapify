@@ -2,7 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from flask import request
-from pythonjsonlogger import jsonlogger
+from python_json_logger import jsonlogger  # Cambiamos la importación aquí
 
 class RequestFormatter(logging.Formatter):
     def format(self, record):
