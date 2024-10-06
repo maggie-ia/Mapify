@@ -3,8 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_caching import Cache
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
 import logging
 from config import Config
 from .utils.logger import setup_logger
@@ -47,10 +45,16 @@ def init_extensions(app):
 
 def setup_sentry(app):
     if app.config['SENTRY_DSN']:
-        sentry_sdk.init(
-            dsn=app.config['SENTRY_DSN'],
-            integrations=[FlaskIntegration()]
-        )
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.flask import FlaskIntegration
+            sentry_sdk.init(
+                dsn=app.config['SENTRY_DSN'],
+                integrations=[FlaskIntegration()]
+            )
+            app.logger.info("Sentry initialized successfully")
+        except ImportError:
+            app.logger.warning("Sentry SDK not found. Sentry integration disabled.")
 
 def setup_cache(app):
     cache_config = {
