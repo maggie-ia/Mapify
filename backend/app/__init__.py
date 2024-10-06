@@ -2,15 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-from config import Config  # Updated import statement
-from .utils.logger import setup_logger
-from .utils.error_handler import setup_error_handlers
-import logging
-from .config.logging_config import setup_logging
-from .extensions import db, migrate, jwt, cache
 from flask_caching import Cache
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+import logging
+from config import Config
+from .utils.logger import setup_logger
+from .utils.error_handler import setup_error_handlers
+from .config.logging_config import setup_logging
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -21,31 +20,55 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    
+    # Inicialización de extensiones
+    init_extensions(app)
+
+    # Configuración de Sentry
+    setup_sentry(app)
+
+    # Configuración del caché
+    setup_cache(app)
+
+    # Configuración de logging
+    setup_logging_and_error_handlers(app)
+
+    # Registro de blueprints
+    register_blueprints(app)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Mapify application startup')
+
+    return app
+
+def init_extensions(app):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+def setup_sentry(app):
     if app.config['SENTRY_DSN']:
         sentry_sdk.init(
             dsn=app.config['SENTRY_DSN'],
             integrations=[FlaskIntegration()]
         )
-    
-    # Configuración del caché
+
+def setup_cache(app):
     cache_config = {
-        'CACHE_TYPE': 'simple',  # Puedes cambiar a 'redis' o 'memcached' en producción
-        'CACHE_DEFAULT_TIMEOUT': 300  # 5 minutos
+        'CACHE_TYPE': 'simple',
+        'CACHE_DEFAULT_TIMEOUT': 300
     }
     app.config.from_mapping(cache_config)
     cache.init_app(app)
 
+def setup_logging_and_error_handlers(app):
     setup_logger(app)
     setup_error_handlers(app)
     setup_logging(app)
 
+def register_blueprints(app):
     from .routes import bp as main_bp
     from .routes import main, auth, text_processing, membership, chat, metrics
+
     app.register_blueprint(main_bp)
     app.register_blueprint(main)
     app.register_blueprint(auth, url_prefix='/auth')
@@ -53,10 +76,5 @@ def create_app(config_class=Config):
     app.register_blueprint(membership, url_prefix='/membership')
     app.register_blueprint(chat, url_prefix='/chat')
     app.register_blueprint(metrics, url_prefix='/metrics')
-
-    app.logger.setLevel(logging.INFO)
-    app.logger.info('Mapify application startup')
-
-    return app
 
 from . import models
