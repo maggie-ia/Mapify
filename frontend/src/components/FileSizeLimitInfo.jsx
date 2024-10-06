@@ -12,18 +12,21 @@ const FileSizeLimitInfo = () => {
             free: 'Gratuito',
             basic: 'Básico',
             premium: 'Premium',
+            membership: 'membresía'
         },
         en: {
             fileSizeLimit: 'File size limit:',
             free: 'Free',
             basic: 'Basic',
             premium: 'Premium',
+            membership: 'membership'
         },
         fr: {
             fileSizeLimit: 'Limite de taille de fichier :',
             free: 'Gratuit',
             basic: 'Basique',
             premium: 'Premium',
+            membership: 'adhésion'
         }
     };
 
@@ -32,9 +35,10 @@ const FileSizeLimitInfo = () => {
             case 'premium':
                 return '50 MB';
             case 'basic':
+                return '25 MB';
             case 'free':
             default:
-                return '16 MB';
+                return '10 MB';
         }
     };
 

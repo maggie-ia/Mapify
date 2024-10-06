@@ -6,7 +6,8 @@ export const MEMBERSHIP_LIMITS = {
         maxConceptMapNodes: 0,
         allowedLanguages: ['en', 'es'],
         weeklyExports: 1,
-        problemSolvingLimit: 5
+        problemSolvingLimit: 5,
+        maxFileSize: 10 * 1024 * 1024 // 10 MB
     },
     basic: {
         monthlyOperations: 10,
@@ -15,7 +16,8 @@ export const MEMBERSHIP_LIMITS = {
         maxConceptMapNodes: 6,
         allowedLanguages: ['en', 'es', 'fr', 'de'],
         monthlyExports: 10,
-        problemSolvingLimit: 20
+        problemSolvingLimit: 20,
+        maxFileSize: 25 * 1024 * 1024 // 25 MB
     },
     premium: {
         monthlyOperations: Infinity,
@@ -24,6 +26,7 @@ export const MEMBERSHIP_LIMITS = {
         maxConceptMapNodes: Infinity,
         allowedLanguages: 'all',
         monthlyExports: Infinity,
-        problemSolvingLimit: Infinity
+        problemSolvingLimit: Infinity,
+        maxFileSize: 50 * 1024 * 1024 // 50 MB
     }
 };
