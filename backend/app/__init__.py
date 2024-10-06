@@ -78,5 +78,5 @@ def register_blueprints(app):
     app.register_blueprint(chat, url_prefix='/chat')
     app.register_blueprint(metrics, url_prefix='/metrics')
 
-# Importar modelos después de la inicialización de la aplicación
+# Import models after the application initialization
 from . import models

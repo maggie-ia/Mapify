@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
-from app.models.user import User
+from app.models import User  # Updated import
 from app.services.auth_service import (
     register_user, verify_firebase_token, verify_email, enable_two_factor,
     verify_two_factor, reset_password, change_password, logout_all_devices,
@@ -270,4 +270,3 @@ def upgrade_membership_route():
             return jsonify({"message": "Membresía actualizada exitosamente", "new_membership": result}), 200
         return jsonify({"error": "No se pudo actualizar la membresía"}), 400
     except Exception as e:
-        return handle_error(e)
