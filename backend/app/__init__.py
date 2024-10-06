@@ -33,9 +33,6 @@ def create_app(config_class=Config):
     # Registro de blueprints
     register_blueprints(app)
 
-    app.logger.setLevel(logging.INFO)
-    app.logger.info('Mapify application startup')
-
     return app
 
 def init_extensions(app):
@@ -44,7 +41,7 @@ def init_extensions(app):
     jwt.init_app(app)
 
 def setup_sentry(app):
-    if app.config['SENTRY_DSN']:
+    if app.config.get('SENTRY_DSN'):
         try:
             import sentry_sdk
             from sentry_sdk.integrations.flask import FlaskIntegration
@@ -81,4 +78,5 @@ def register_blueprints(app):
     app.register_blueprint(chat, url_prefix='/chat')
     app.register_blueprint(metrics, url_prefix='/metrics')
 
+# Importar modelos después de la inicialización de la aplicación
 from . import models

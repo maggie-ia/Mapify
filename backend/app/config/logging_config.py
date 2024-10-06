@@ -1,7 +1,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-from flask import request
+from flask import request, has_request_context
+from datetime import datetime
 
 try:
     from pythonjsonlogger import jsonlogger
@@ -9,19 +10,25 @@ except ImportError:
     try:
         from python_json_logger import jsonlogger
     except ImportError:
-        raise ImportError("No se pudo importar el módulo jsonlogger. Asegúrate de que esté instalado correctamente.")
+        jsonlogger = None
+        print("Warning: jsonlogger not found. Using basic logger instead.")
 
 class RequestFormatter(logging.Formatter):
     def format(self, record):
-        record.url = request.url
-        record.remote_addr = request.remote_addr
+        if has_request_context():
+            record.url = request.url
+            record.remote_addr = request.remote_addr
+        else:
+            record.url = None
+            record.remote_addr = None
         return super().format(record)
 
-class CustomJsonFormatter(jsonlogger.JsonFormatter):
+class CustomJsonFormatter(jsonlogger.JsonFormatter if jsonlogger else logging.Formatter):
     def add_fields(self, log_record, record, message_dict):
         super(CustomJsonFormatter, self).add_fields(log_record, record, message_dict)
         if not log_record.get('timestamp'):
-            log_record['timestamp'] = record.created
+            # Esto asegura que siempre haya un campo 'timestamp'
+            log_record['timestamp'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         if log_record.get('level'):
             log_record['level'] = log_record['level'].upper()
         else:
@@ -34,7 +41,7 @@ def setup_logging(app):
     # Configurar el logger principal
     file_handler = RotatingFileHandler('logs/mapify.log', maxBytes=10240, backupCount=10)
     formatter = RequestFormatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d] - from %(remote_addr)s - %(url)s'
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]%(if url)s - URL: %(url)s%(end)s%(if remote_addr)s - IP: %(remote_addr)s%(end)s'
     )
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
@@ -51,10 +58,10 @@ def setup_logging(app):
     error_logger.setLevel(logging.ERROR)
 
     # Configurar el logger JSON para todos los logs
-    json_handler = RotatingFileHandler('logs/mapify_all.json', maxBytes=10240, backupCount=10)
-    json_handler.setFormatter(json_formatter)
-    json_handler.setLevel(logging.DEBUG)
-    app.logger.addHandler(json_handler)
+    if jsonlogger:
+        json_handler = RotatingFileHandler('logs/mapify_all.json', maxBytes=10240, backupCount=10)
+        json_handler.setFormatter(json_formatter)
+        json_handler.setLevel(logging.DEBUG)
+        app.logger.addHandler(json_handler)
 
     app.logger.info('Logging setup completed')
-
