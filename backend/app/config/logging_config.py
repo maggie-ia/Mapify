@@ -2,7 +2,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from flask import request
-from python_json_logger import jsonlogger  # Cambiamos la importación aquí
+
+try:
+    from pythonjsonlogger import jsonlogger
+except ImportError:
+    try:
+        from python_json_logger import jsonlogger
+    except ImportError:
+        raise ImportError("No se pudo importar el módulo jsonlogger. Asegúrate de que esté instalado correctamente.")
 
 class RequestFormatter(logging.Formatter):
     def format(self, record):
@@ -50,3 +57,4 @@ def setup_logging(app):
     app.logger.addHandler(json_handler)
 
     app.logger.info('Logging setup completed')
+
