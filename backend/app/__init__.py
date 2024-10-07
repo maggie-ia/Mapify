@@ -33,6 +33,10 @@ def create_app(config_class=Config):
     # Registro de blueprints
     register_blueprints(app)
 
+    # Import models
+    with app.app_context():
+        from . import models
+
     return app
 
 def init_extensions(app):
