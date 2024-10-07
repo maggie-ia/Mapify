@@ -86,14 +86,6 @@ class User(db.Model, UserMembership, UserPermissions):
             return False
         return True
     
-    def generate_2fa_secret(self):
-        self.two_factor_secret = pyotp.random_base32()
-        self.is_two_factor_enabled = True
-    
-    def verify_2fa(self, token):
-        totp = pyotp.TOTP(self.two_factor_secret)
-        return totp.verify(token)
-    
     def generate_reset_token(self):
         self.reset_token = secrets.token_urlsafe(32)
         self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
@@ -114,52 +106,6 @@ class User(db.Model, UserMembership, UserPermissions):
             'is_two_factor_enabled': self.two_factor_enabled
         }
 
-    def generate_email_verification_token(self):
-        token = secrets.token_urlsafe(32)
-        self.email_verification_token = token
-        self.email_verification_sent_at = datetime.utcnow()
-        db.session.commit()
-        return token
-
-    def verify_email(self, token):
-        if self.email_verification_token == token and \
-           datetime.utcnow() - self.email_verification_sent_at < timedelta(hours=24):
-            self.email_verified = True
-            self.email_verification_token = None
-            db.session.commit()
-            return True
-        return False
-
-    def enable_two_factor(self):
-        self.two_factor_secret = pyotp.random_base32()
-        self.two_factor_enabled = True
-        db.session.commit()
-        return self.two_factor_secret
-
-    def verify_two_factor(self, token):
-        totp = pyotp.TOTP(self.two_factor_secret)
-        return totp.verify(token)
-
-    def is_password_secure(self, password):
-        if len(password) < 8:
-            return False
-        if not any(char.isupper() for char in password):
-            return False
-        if not any(char.islower() for char in password):
-            return False
-        if not any(char.isdigit() for char in password):
-            return False
-        if not any(char in "!@#$%^&*(),.?\":{}|<>" for char in password):
-            return False
-        return True
-
-    def generate_reset_token(self):
-        self.reset_token = secrets.token_urlsafe(32)
-        self.reset_token_expiration = datetime.utcnow() + timedelta(hours=1)
-        db.session.commit()
-        return self.reset_token
-
-
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -167,22 +113,4 @@ class UserActivity(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     details = db.Column(db.String(255))
 
-    def renew_membership(self):
-        if self.membership_type != 'free':
-            self.membership_start_date = datetime.utcnow()
-            if self.membership_duration == 'monthly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=30)
-            elif self.membership_duration == 'sixMonths':
-                self.membership_end_date = self.membership_start_date + timedelta(days=180)
-            elif self.membership_duration == 'yearly':
-                self.membership_end_date = self.membership_start_date + timedelta(days=365)
-        db.session.commit()
-    
-    def log_error(self, error_message):
-        logger = logging.getLogger('mapify_error_logger')
-        logger.error(f"User {self.id} - {error_message}")     
-
-class RevokedToken(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    jti = db.Column(db.String(36), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('activities', lazy=True))
