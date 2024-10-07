@@ -211,3 +211,4 @@ def update_membership(user_id: int, new_membership_type: str, new_duration: str)
         db.session.rollback()
         raise AuthenticationError("Error al actualizar la membresía")
 
+

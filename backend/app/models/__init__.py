@@ -10,3 +10,8 @@ from .user_membership import UserMembership
 from .user_permissions import UserPermissions
 
 # Ensure all models are imported here
+__all__ = [
+    'User', 'UserActivity', 'Document', 'Operation', 'Export',
+    'ChatConversation', 'ConversationCategory', 'Membership',
+    'RevokedToken', 'UserMembership', 'UserPermissions'
+]
