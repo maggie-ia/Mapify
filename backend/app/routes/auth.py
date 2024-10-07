@@ -270,3 +270,4 @@ def upgrade_membership_route():
             return jsonify({"message": "Membresía actualizada exitosamente", "new_membership": result}), 200
         return jsonify({"error": "No se pudo actualizar la membresía"}), 400
     except Exception as e:
+

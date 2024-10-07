@@ -1,6 +1,6 @@
-from app.models.user import User, UserActivity
+from app.models import User, UserActivity
 from app.utils.exceptions import AuthenticationError
-from app.services.auth_utils import log_user_activity,generate_reset_token,send_password_reset_email,send_verification_email
+from app.services.auth_utils import log_user_activity, generate_reset_token, send_password_reset_email, send_verification_email
 from werkzeug.security import check_password_hash
 import logging
 from datetime import datetime, timedelta
@@ -16,14 +16,14 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jt
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import phonenumbers
-from app.models.revoked_token import RevokedToken
+from app.models import RevokedToken
 from app.extensions import db, cache
 from flask_caching import Cache
 import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from flask import current_app
-from app.models.membership import Membership
+from app.models import Membership
 
 logger = logging.getLogger(__name__)
 
@@ -210,3 +210,4 @@ def update_membership(user_id: int, new_membership_type: str, new_duration: str)
         logger.error(f"Error al actualizar la membresía: {str(e)}")
         db.session.rollback()
         raise AuthenticationError("Error al actualizar la membresía")
+
